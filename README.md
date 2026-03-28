@@ -16,6 +16,15 @@ CS-Thesis-Model-Training/
 │       ├── evaluation_results/     # Cross-distribution eval results
 │       ├── maze_metrics/           # Structural maze analysis CSVs
 │       └── statistical_analysis/   # PRNG vs QRNG stat reports
+├── a2c/                            # Advantage Actor-Critic
+│   ├── scripts/                    # All A2C-related scripts
+│   ├── models/                     # Trained model .zip files
+│   └── outputs/
+│       ├── training_logs/          # Per-episode training CSVs
+│       ├── training_reports/       # HTML reports & PNG charts
+│       ├── evaluation_results/     # Cross-distribution eval results
+│       ├── maze_metrics/           # Structural maze analysis CSVs
+│       └── statistical_analysis/   # PRNG vs QRNG stat reports
 ```
 
 ## Prerequisites
@@ -124,6 +133,89 @@ python3 ppo/scripts/statistical_analysis_extended.py \
   --output ppo/outputs/statistical_analysis/report_extended.txt
 ```
 
+## A2C Pipeline
+
+### Step 1: Train Agents
+
+Train two separate A2C agents -- one on PRNG-seeded mazes, one on QRNG-seeded mazes.
+
+```bash
+# Train PRNG agent (~10M timesteps)
+python3 a2c/scripts/train_prng.py
+
+# Train QRNG agent (~10M timesteps)
+python3 a2c/scripts/train_qrng.py
+```
+
+**Outputs:**
+- `a2c/models/*.zip` -- trained model weights
+- `a2c/outputs/training_logs/` -- per-episode reward, success, steps
+- `a2c/outputs/training_reports/` -- HTML report with reward curves and success rate charts
+
+### Step 2: Evaluate Agents on Unseen Mazes
+
+Runs 4 evaluation conditions (100 episodes each) using mazes from seed offset 40,000+ (never seen during training):
+
+| Condition | Agent | Maze Source | Type |
+|-----------|-------|-------------|------|
+| 1 | PRNG model | Novel PRNG mazes | Intra-distribution |
+| 2 | PRNG model | Novel QRNG mazes | Cross-distribution |
+| 3 | QRNG model | Novel QRNG mazes | Intra-distribution |
+| 4 | QRNG model | Novel PRNG mazes | Cross-distribution |
+
+```bash
+python3 a2c/scripts/evaluate_agents.py
+```
+
+**Outputs:**
+- `a2c/outputs/evaluation_results/evaluation_results.csv` -- per-episode results
+- `a2c/outputs/evaluation_results/evaluation_report.html` -- visual report with generalization gap analysis
+
+### Step 3: Extract Maze Structural Metrics
+
+Uses the same shared maze metrics extractor:
+
+```bash
+python3 ppo/scripts/maze_metrics_extractor.py \
+  --seeds seeds/prng_seeds.csv \
+  --output a2c/outputs/maze_metrics/prng_metrics.csv
+
+python3 ppo/scripts/maze_metrics_extractor.py \
+  --seeds seeds/qrng_seeds.csv \
+  --output a2c/outputs/maze_metrics/qrng_metrics.csv
+```
+
+### Step 4: Statistical Comparison (PRNG vs QRNG)
+
+Uses the same shared statistical analysis scripts:
+
+```bash
+python3 ppo/scripts/statistical_analysis.py \
+  --prng a2c/outputs/maze_metrics/prng_metrics.csv \
+  --qrng a2c/outputs/maze_metrics/qrng_metrics.csv \
+  --output a2c/outputs/statistical_analysis/report.txt
+
+python3 ppo/scripts/statistical_analysis_extended.py \
+  --prng a2c/outputs/maze_metrics/prng_metrics.csv \
+  --qrng a2c/outputs/maze_metrics/qrng_metrics.csv \
+  --output a2c/outputs/statistical_analysis/report_extended.txt
+```
+
+### A2C Hyperparameters
+
+| Parameter | Value |
+|-----------|-------|
+| **learning_rate** | 3e-4 |
+| **n_steps** | 5 |
+| **gamma** | 0.99 |
+| **gae_lambda** | 1.0 |
+| **ent_coef** | 0.01 |
+| **vf_coef** | 0.5 |
+| **max_grad_norm** | 0.5 |
+| **use_rms_prop** | False (Adam) |
+| **normalize_advantage** | False |
+| **Network** | pi=[256,256], vf=[256,256] |
+
 ## Key Metrics
 
 | Metric | Description |
@@ -142,7 +234,7 @@ python3 ppo/scripts/statistical_analysis_extended.py \
 - **Actions:** 4 discrete (Up, Right, Down, Left)
 - **Max steps:** 500 per episode
 - **Frame stacking:** 4 frames (temporal context)
-- **Training:** PPO with 12 parallel environments, 10M timesteps
+- **Training:** PPO / A2C with 12 parallel environments, 10M timesteps
 
 ## Reward Structure
 
