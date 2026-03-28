@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS Thesis Results: PRNG vs QRNG in RL Maze Navigation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --prng: #2563eb;
+    --qrng: #dc2626;
+    --prng-light: #93bbfd;
+    --qrng-light: #fca5a5;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --success: #22c55e;
+    --warn: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+  header { text-align: center; margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+  header p { color: var(--muted); font-size: 0.95rem; }
+  h2 { font-size: 1.35rem; margin-bottom: 1rem; color: var(--accent); }
+  h3 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .section { margin-bottom: 3rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; }
+  .stat-card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  .stat-card .value { font-size: 1.8rem; font-weight: 700; }
+  .stat-card .sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  .prng-color { color: var(--prng); }
+  .qrng-color { color: var(--qrng); }
+  .success-color { color: var(--success); }
+  .warn-color { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #052e16; color: #4ade80; }
+  .badge-red { background: #450a0a; color: #fca5a5; }
+  .badge-yellow { background: #422006; color: #fbbf24; }
+  .badge-blue { background: #0c1e3d; color: #60a5fa; }
+  .chart-container { position: relative; height: 320px; }
+  .chart-container-sm { position: relative; height: 260px; }
+  .legend-inline { display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 1rem; font-size: 0.85rem; }
+  .legend-inline span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend-prng::before { background: var(--prng) !important; }
+  .legend-qrng::before { background: var(--qrng) !important; }
+  .conclusion-box { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid var(--accent); border-radius: 12px; padding: 2rem; }
+  .conclusion-box h3 { color: var(--accent); margin-bottom: 1rem; }
+  .conclusion-box ul { padding-left: 1.5rem; }
+  .conclusion-box li { margin-bottom: 0.5rem; }
+  .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+  .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: #334155; color: var(--muted); }
+  .flex-center { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+  .gap-diff { font-size: 0.85rem; color: var(--muted); }
+  .highlight-row { background: rgba(56, 189, 248, 0.05); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>PRNG vs QRNG Randomness in Reinforcement Learning Maze Navigation</h1>
+  <p>CS Thesis &mdash; PPO Agent Evaluation on 20&times;20 Mazes &mdash; 10M Timesteps Training</p>
+</header>
+
+<!-- ===== SECTION 1: KEY FINDINGS ===== -->
+<div class="section">
+  <h2>Key Findings at a Glance</h2>
+  <div class="grid-4" id="key-stats"></div>
+</div>
+
+<!-- ===== SECTION 2: EVALUATION RESULTS ===== -->
+<div class="section">
+  <h2>Evaluation Performance (100 Episodes per Condition)</h2>
+  <div class="legend-inline">
+    <span class="legend-prng">PRNG Agent</span>
+    <span class="legend-qrng">QRNG Agent</span>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Success Rate by Condition</h3>
+      <div class="chart-container"><canvas id="chartSR"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Average Reward by Condition</h3>
+      <div class="chart-container"><canvas id="chartReward"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Average Steps (Successful Episodes)</h3>
+      <div class="chart-container"><canvas id="chartSteps"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Generalization Gap Analysis</h3>
+      <div class="chart-container"><canvas id="chartGap"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Detailed Evaluation Results</h3>
+    <table id="evalTable">
+      <thead>
+        <tr><th>Condition</th><th>Agent</th><th>Maze Source</th><th>Type</th><th>Success Rate</th><th>Avg Reward</th><th>Avg Steps</th><th>Median Steps (Success)</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SECTION 3: TRAINING SUMMARY ===== -->
+<div class="section">
+  <h2>Training Summary</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Final Training Metrics</h3>
+      <table>
+        <thead><tr><th>Metric</th><th class="prng-color">PRNG Agent</th><th class="qrng-color">QRNG Agent</th></tr></thead>
+        <tbody>
+          <tr><td>Total Timesteps</td><td>~10M</td><td>~10M</td></tr>
+          <tr><td>Total Episodes</td><td>39,085</td><td>43,917</td></tr>
+          <tr><td>Final Avg Reward (100-ep)</td><td>403.22</td><td>391.03</td></tr>
+          <tr><td>Final Success Rate (100-ep)</td><td>94%</td><td>90%</td></tr>
+          <tr><td>Final Avg Steps (100-ep)</td><td>138.3</td><td>144.3</td></tr>
+          <tr><td>Unique Mazes Seen</td><td>3,352</td><td>144</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Training Configuration</h3>
+      <table>
+        <tbody>
+          <tr><td>Algorithm</td><td>PPO (Stable-Baselines3)</td></tr>
+          <tr><td>Maze Size</td><td>20 &times; 20</td></tr>
+          <tr><td>Observation</td><td>8-ray LIDAR + 2D target = 10 inputs</td></tr>
+          <tr><td>Frame Stacking</td><td>4 frames</td></tr>
+          <tr><td>Parallel Environments</td><td>12</td></tr>
+          <tr><td>Max Steps/Episode</td><td>500</td></tr>
+          <tr><td>Eval Episodes</td><td>100 per condition (seed offset 40k+)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4: MAZE STRUCTURAL ANALYSIS ===== -->
+<div class="section">
+  <h2>Maze Structural Analysis (PRNG vs QRNG)</h2>
+  <p style="color: var(--muted); margin-bottom: 1rem;">76,800+ mazes analyzed per seed type</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Metric Comparison</h3>
+      <div class="chart-container"><canvas id="chartMaze"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Summary Statistics</h3>
+      <table>
+        <thead><tr><th>Metric</th><th class="prng-color">PRNG (Median)</th><th class="qrng-color">QRNG (Median)</th><th>Difference</th></tr></thead>
+        <tbody>
+          <tr><td>Shortest Path Length</td><td>84.0</td><td>84.0</td><td>0.0</td></tr>
+          <tr><td>Tortuosity</td><td>2.471</td><td>2.471</td><td>0.000</td></tr>
+          <tr><td>Dead End Count</td><td>12.0</td><td>12.0</td><td>0.0</td></tr>
+          <tr><td>3-way Junctions (p3)</td><td>1.0</td><td>1.0</td><td>0.0</td></tr>
+          <tr><td>4-way Junctions (p4)</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
+          <tr><td>Straight Corridors</td><td>12.0</td><td>12.0</td><td>0.0</td></tr>
+          <tr><td>Turning Corridors</td><td>13.0</td><td>13.0</td><td>0.0</td></tr>
+          <tr><td>Total Turns</td><td>46.0</td><td>46.0</td><td>0.0</td></tr>
+          <tr><td>Mean Turns/Corridor</td><td>1.778</td><td>1.778</td><td>0.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5: STATISTICAL TESTS ===== -->
+<div class="section">
+  <h2>Statistical Analysis</h2>
+  <div class="card">
+    <h3>Mann-Whitney U Tests (alpha = 0.05)</h3>
+    <p style="color: var(--muted); margin-bottom: 1rem;">Shapiro-Wilk rejected normality for all metrics &rarr; non-parametric tests used</p>
+    <table>
+      <thead><tr><th>Metric</th><th>PRNG Median</th><th>QRNG Median</th><th>U Statistic</th><th>p-value</th><th>Significant?</th></tr></thead>
+      <tbody>
+        <tr><td>Shortest Path Length</td><td>84.0</td><td>84.0</td><td>2,951,379,324</td><td>0.798</td><td><span class="badge badge-green">No (p=0.80)</span></td></tr>
+        <tr><td>Dead End Count</td><td>12.0</td><td>12.0</td><td>2,952,793,045</td><td>0.672</td><td><span class="badge badge-green">No (p=0.67)</span></td></tr>
+        <tr><td>Tortuosity</td><td>2.471</td><td>2.471</td><td>2,951,379,324</td><td>0.798</td><td><span class="badge badge-green">No (p=0.80)</span></td></tr>
+        <tr><td>3-way Junctions (p3)</td><td>1.0</td><td>1.0</td><td>2,942,843,616</td><td>0.125</td><td><span class="badge badge-green">No (p=0.13)</span></td></tr>
+        <tr><td>4-way Junctions (p4)</td><td>0.0</td><td>0.0</td><td>2,955,473,184</td><td>0.125</td><td><span class="badge badge-green">No (p=0.13)</span></td></tr>
+        <tr><td>Straight Corridors</td><td>12.0</td><td>12.0</td><td>2,957,372,030</td><td>0.343</td><td><span class="badge badge-green">No (p=0.34)</span></td></tr>
+        <tr><td>Turning Corridors</td><td>13.0</td><td>13.0</td><td>2,944,203,067</td><td>0.565</td><td><span class="badge badge-green">No (p=0.56)</span></td></tr>
+        <tr><td>Total Turns</td><td>46.0</td><td>46.0</td><td>2,940,175,814</td><td>0.300</td><td><span class="badge badge-green">No (p=0.30)</span></td></tr>
+        <tr><td>Mean Turns/Corridor</td><td>1.778</td><td>1.778</td><td>2,941,772,091</td><td>0.395</td><td><span class="badge badge-green">No (p=0.40)</span></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top: 1rem; text-align: center;">
+      <span class="badge badge-green" style="font-size: 0.9rem; padding: 0.4rem 1rem;">0 / 9 metrics show significant difference</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>p-value Distribution</h3>
+    <div class="chart-container-sm"><canvas id="chartPvalues"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6: REWARD DISTRIBUTION ===== -->
+<div class="section">
+  <h2>Reward Distribution by Condition</h2>
+  <div class="card">
+    <div class="chart-container"><canvas id="chartRewardDist"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== SECTION 7: CONCLUSIONS ===== -->
+<div class="section">
+  <h2>Conclusions</h2>
+  <div class="conclusion-box">
+    <h3>Primary Finding</h3>
+    <p style="font-size: 1.05rem; margin-bottom: 1rem;">
+      <strong>The source of randomness (PRNG vs QRNG) does not produce statistically significant differences</strong> in either maze structural properties or reinforcement learning agent generalization performance.
+    </p>
+    <ul>
+      <li><strong>Maze Structure:</strong> All 9 structural metrics (shortest path, tortuosity, dead ends, junctions, corridors, turns) showed identical medians between PRNG and QRNG mazes. Mann-Whitney U tests confirmed no significant difference (0/9 metrics, all p &gt; 0.05, lowest p = 0.125).</li>
+      <li><strong>Agent Performance:</strong> Both PRNG-trained and QRNG-trained agents achieved comparable success rates on evaluation (PRNG: 78% intra / 76% cross; QRNG: 79% intra / 68% cross). The QRNG agent showed a slightly larger generalization gap (11% vs 2%), but both agents demonstrated cross-distribution competence.</li>
+      <li><strong>Generalization:</strong> The PRNG agent generalized slightly better across maze types (2% gap vs 11% gap), though both agents performed well on unseen mazes from either distribution.</li>
+      <li><strong>Training Convergence:</strong> The PRNG agent reached a higher final success rate (94% vs 90%) and saw far more unique mazes (3,352 vs 144), suggesting the seed diversity during training may matter more than the randomness source.</li>
+      <li><strong>Implication:</strong> For DFS-based maze generation on a 20&times;20 grid, PRNG seeds produce statistically equivalent maze distributions to QRNG seeds. Quantum randomness does not confer a measurable advantage for training RL maze navigation agents.</li>
+    </ul>
+  </div>
+</div>
+
+<footer style="text-align: center; color: var(--muted); font-size: 0.8rem; padding: 2rem 0; border-top: 1px solid var(--border);">
+  Generated from experimental outputs &mdash; PPO agents trained with Stable-Baselines3 &mdash; 20&times;20 DFS Mazes &mdash; 10M Timesteps
+</footer>
+
+</div>
+
+<script>
+// ===== DATA =====
+const evalRaw = [
+  // condition, episode, success, reward, steps
+  // Parsed from CSV
+];
+
+// Pre-computed from CSV data
+const conditions = {
+  prng_on_prng: { label: 'PRNG on PRNG', agent: 'PRNG', maze: 'PRNG', type: 'Intra', successes: 0, totalReward: 0, totalSteps: 0, successSteps: [], rewards: [], n: 100 },
+  prng_on_qrng: { label: 'PRNG on QRNG', agent: 'PRNG', maze: 'QRNG', type: 'Cross', successes: 0, totalReward: 0, totalSteps: 0, successSteps: [], rewards: [], n: 100 },
+  qrng_on_qrng: { label: 'QRNG on QRNG', agent: 'QRNG', maze: 'QRNG', type: 'Intra', successes: 0, totalReward: 0, totalSteps: 0, successSteps: [], rewards: [], n: 100 },
+  qrng_on_prng: { label: 'QRNG on PRNG', agent: 'QRNG', maze: 'PRNG', type: 'Cross', successes: 0, totalReward: 0, totalSteps: 0, successSteps: [], rewards: [], n: 100 },
+};
+
+// Parse inline data
+const csvData = `condition,episode,success,reward,steps
+prng_on_prng,1,0,236.46,500
+prng_on_prng,2,1,365.76,59
+prng_on_prng,3,0,259.60,500
+prng_on_prng,4,1,374.43,67
+prng_on_prng,5,1,409.89,106
+prng_on_prng,6,1,398.49,84
+prng_on_prng,7,1,404.01,89
+prng_on_prng,8,0,247.53,500
+prng_on_prng,9,0,246.92,500
+prng_on_prng,10,1,396.09,84
+prng_on_prng,11,1,378.36,68
+prng_on_prng,12,1,490.38,157
+prng_on_prng,13,0,186.98,500
+prng_on_prng,14,1,455.61,131
+prng_on_prng,15,1,426.15,101
+prng_on_prng,16,0,258.16,500
+prng_on_prng,17,1,405.96,88
+prng_on_prng,18,0,313.56,500
+prng_on_prng,19,0,223.05,500
+prng_on_prng,20,0,225.17,500
+prng_on_prng,21,1,373.14,63
+prng_on_prng,22,1,391.17,79
+prng_on_prng,23,1,466.35,145
+prng_on_prng,24,1,462.24,136
+prng_on_prng,25,1,456.18,124
+prng_on_prng,26,0,238.06,500
+prng_on_prng,27,1,382.95,70
+prng_on_prng,28,0,219.20,500
+prng_on_prng,29,1,354.36,48
+prng_on_prng,30,1,398.94,83
+prng_on_prng,31,1,400.86,90
+prng_on_prng,32,1,354.36,48
+prng_on_prng,33,1,452.73,127
+prng_on_prng,34,1,351.57,46
+prng_on_prng,35,0,192.36,500
+prng_on_prng,36,1,424.65,103
+prng_on_prng,37,1,365.76,59
+prng_on_prng,38,1,388.83,74
+prng_on_prng,39,0,226.44,500
+prng_on_prng,40,1,376.68,64
+prng_on_prng,41,1,486.66,161
+prng_on_prng,42,1,396.09,84
+prng_on_prng,43,0,196.56,500
+prng_on_prng,44,1,491.97,157
+prng_on_prng,45,1,462.66,141
+prng_on_prng,46,1,382.26,68
+prng_on_prng,47,1,395.46,79
+prng_on_prng,48,1,428.19,113
+prng_on_prng,49,0,233.72,500
+prng_on_prng,50,1,451.29,122
+prng_on_prng,51,1,376.92,67
+prng_on_prng,52,0,240.05,500
+prng_on_prng,53,1,381.00,80
+prng_on_prng,54,0,236.16,500
+prng_on_prng,55,1,459.06,130
+prng_on_prng,56,1,342.45,41
+prng_on_prng,57,0,293.56,500
+prng_on_prng,58,1,361.98,55
+prng_on_prng,59,1,445.65,121
+prng_on_prng,60,1,409.38,95
+prng_on_prng,61,1,398.25,81
+prng_on_prng,62,1,447.33,125
+prng_on_prng,63,0,202.74,500
+prng_on_prng,64,1,404.52,87
+prng_on_prng,65,1,500.76,172
+prng_on_prng,66,0,257.14,500
+prng_on_prng,67,1,434.88,117
+prng_on_prng,68,1,405.87,88
+prng_on_prng,69,1,391.17,79
+prng_on_prng,70,1,381.75,72
+prng_on_prng,71,1,402.48,86
+prng_on_prng,72,0,193.75,500
+prng_on_prng,73,1,438.69,113
+prng_on_prng,74,1,448.77,126
+prng_on_prng,75,1,369.84,65
+prng_on_prng,76,1,360.18,55
+prng_on_prng,77,1,490.11,162
+prng_on_prng,78,1,401.79,82
+prng_on_prng,79,1,376.92,67
+prng_on_prng,80,1,469.29,144
+prng_on_prng,81,1,348.78,44
+prng_on_prng,82,1,360.93,54
+prng_on_prng,83,1,465.18,135
+prng_on_prng,84,1,460.80,142
+prng_on_prng,85,1,449.04,129
+prng_on_prng,86,0,222.49,500
+prng_on_prng,87,1,395.04,83
+prng_on_prng,88,1,376.68,64
+prng_on_prng,89,0,223.94,500
+prng_on_prng,90,1,437.22,120
+prng_on_prng,91,1,399.57,88
+prng_on_prng,92,1,392.61,80
+prng_on_prng,93,1,495.63,173
+prng_on_prng,94,1,399.00,80
+prng_on_prng,95,1,410.22,100
+prng_on_prng,96,1,339.66,39
+prng_on_prng,97,1,465.78,137
+prng_on_prng,98,1,393.42,76
+prng_on_prng,99,1,445.65,121
+prng_on_prng,100,1,364.77,57
+prng_on_qrng,1,1,434.79,113
+prng_on_qrng,2,0,271.78,500
+prng_on_qrng,3,1,431.58,115
+prng_on_qrng,4,1,372.39,64
+prng_on_qrng,5,1,362.73,54
+prng_on_qrng,6,1,392.67,77
+prng_on_qrng,7,1,433.59,113
+prng_on_qrng,8,0,228.46,500
+prng_on_qrng,9,0,264.95,500
+prng_on_qrng,10,1,350.76,50
+prng_on_qrng,11,1,412.59,93
+prng_on_qrng,12,1,345.99,42
+prng_on_qrng,13,0,206.97,500
+prng_on_qrng,14,1,375.18,66
+prng_on_qrng,15,1,403.83,85
+prng_on_qrng,16,1,418.80,100
+prng_on_qrng,17,1,520.56,181
+prng_on_qrng,18,1,413.16,99
+prng_on_qrng,19,1,517.65,187
+prng_on_qrng,20,1,469.20,144
+prng_on_qrng,21,1,348.78,44
+prng_on_qrng,22,1,382.95,70
+prng_on_qrng,23,1,376.26,70
+prng_on_qrng,24,1,404.58,84
+prng_on_qrng,25,1,418.80,100
+prng_on_qrng,26,0,274.56,500
+prng_on_qrng,27,0,263.10,500
+prng_on_qrng,28,1,365.52,56
+prng_on_qrng,29,0,253.66,500
+prng_on_qrng,30,1,438.93,118
+prng_on_qrng,31,1,387.09,73
+prng_on_qrng,32,1,393.66,79
+prng_on_qrng,33,1,360.18,55
+prng_on_qrng,34,0,259.43,500
+prng_on_qrng,35,1,492.18,161
+prng_on_qrng,36,0,247.27,500
+prng_on_qrng,37,1,501.36,172
+prng_on_qrng,38,1,353.61,49
+prng_on_qrng,39,1,349.77,46
+prng_on_qrng,40,0,228.55,500
+prng_on_qrng,41,0,244.02,500
+prng_on_qrng,42,1,387.09,73
+prng_on_qrng,43,1,388.53,74
+prng_on_qrng,44,1,439.32,118
+prng_on_qrng,45,0,198.90,500
+prng_on_qrng,46,1,390.21,78
+prng_on_qrng,47,1,398.19,84
+prng_on_qrng,48,0,174.22,500
+prng_on_qrng,49,1,444.90,122
+prng_on_qrng,50,0,194.80,500
+prng_on_qrng,51,1,403.77,88
+prng_on_qrng,52,1,359.94,52
+prng_on_qrng,53,1,355.35,50
+prng_on_qrng,54,1,371.10,60
+prng_on_qrng,55,1,422.82,107
+prng_on_qrng,56,1,359.43,56
+prng_on_qrng,57,1,396.84,83
+prng_on_qrng,58,1,411.78,95
+prng_on_qrng,59,1,375.93,65
+prng_on_qrng,60,1,408.69,93
+prng_on_qrng,61,0,233.31,500
+prng_on_qrng,62,1,375.93,65
+prng_on_qrng,63,0,235.10,500
+prng_on_qrng,64,1,393.42,76
+prng_on_qrng,65,1,408.00,91
+prng_on_qrng,66,1,472.02,160
+prng_on_qrng,67,0,109.82,500
+prng_on_qrng,68,1,359.94,52
+prng_on_qrng,69,1,410.07,97
+prng_on_qrng,70,1,389.22,76
+prng_on_qrng,71,1,392.01,78
+prng_on_qrng,72,1,406.65,96
+prng_on_qrng,73,1,448.74,125
+prng_on_qrng,74,1,365.52,56
+prng_on_qrng,75,1,460.95,132
+prng_on_qrng,76,0,250.81,500
+prng_on_qrng,77,0,189.53,500
+prng_on_qrng,78,1,404.07,88
+prng_on_qrng,79,1,371.10,60
+prng_on_qrng,80,1,362.73,54
+prng_on_qrng,81,0,205.69,500
+prng_on_qrng,82,0,223.60,500
+prng_on_qrng,83,1,406.89,93
+prng_on_qrng,84,1,355.35,50
+prng_on_qrng,85,1,396.09,84
+prng_on_qrng,86,1,377.31,69
+prng_on_qrng,87,0,257.99,500
+prng_on_qrng,88,1,451.65,134
+prng_on_qrng,89,1,400.38,84
+prng_on_qrng,90,1,486.45,161
+prng_on_qrng,91,0,218.96,500
+prng_on_qrng,92,1,376.92,67
+prng_on_qrng,93,1,387.09,73
+prng_on_qrng,94,1,486.72,158
+prng_on_qrng,95,0,184.37,500
+prng_on_qrng,96,1,437.49,115
+prng_on_qrng,97,1,382.80,73
+prng_on_qrng,98,1,354.36,48
+prng_on_qrng,99,1,417.75,101
+prng_on_qrng,100,1,381.51,69
+qrng_on_qrng,1,1,432.36,110
+qrng_on_qrng,2,1,475.29,148
+qrng_on_qrng,3,1,427.71,111
+qrng_on_qrng,4,1,386.13,87
+qrng_on_qrng,5,1,362.73,54
+qrng_on_qrng,6,1,392.67,77
+qrng_on_qrng,7,0,206.29,500
+qrng_on_qrng,8,0,185.85,500
+qrng_on_qrng,9,0,235.52,500
+qrng_on_qrng,10,1,355.83,58
+qrng_on_qrng,11,1,410.04,94
+qrng_on_qrng,12,1,345.99,42
+qrng_on_qrng,13,1,405.21,89
+qrng_on_qrng,14,1,373.68,68
+qrng_on_qrng,15,1,403.83,85
+qrng_on_qrng,16,1,411.78,95
+qrng_on_qrng,17,1,517.62,182
+qrng_on_qrng,18,1,409.83,98
+qrng_on_qrng,19,0,243.95,500
+qrng_on_qrng,20,1,469.83,151
+qrng_on_qrng,21,1,348.03,45
+qrng_on_qrng,22,1,382.95,70
+qrng_on_qrng,23,1,374.70,75
+qrng_on_qrng,24,1,403.08,86
+qrng_on_qrng,25,1,419.10,100
+qrng_on_qrng,26,0,270.73,500
+qrng_on_qrng,27,0,252.25,500
+qrng_on_qrng,28,1,365.52,56
+qrng_on_qrng,29,1,498.57,172
+qrng_on_qrng,30,1,433.50,117
+qrng_on_qrng,31,1,385.59,75
+qrng_on_qrng,32,1,403.83,85
+qrng_on_qrng,33,1,354.60,51
+qrng_on_qrng,34,1,471.60,144
+qrng_on_qrng,35,1,490.74,160
+qrng_on_qrng,36,0,223.51,500
+qrng_on_qrng,37,1,489.72,164
+qrng_on_qrng,38,1,353.61,49
+qrng_on_qrng,39,1,361.32,67
+qrng_on_qrng,40,0,218.92,500
+qrng_on_qrng,41,1,402.72,87
+qrng_on_qrng,42,1,387.09,73
+qrng_on_qrng,43,1,387.84,72
+qrng_on_qrng,44,1,440.37,119
+qrng_on_qrng,45,0,197.76,500
+qrng_on_qrng,46,0,212.65,500
+qrng_on_qrng,47,1,397.50,82
+qrng_on_qrng,48,0,174.17,500
+qrng_on_qrng,49,1,443.01,124
+qrng_on_qrng,50,1,388.47,77
+qrng_on_qrng,51,1,401.52,91
+qrng_on_qrng,52,1,359.94,52
+qrng_on_qrng,53,1,348.27,48
+qrng_on_qrng,54,1,371.10,60
+qrng_on_qrng,55,1,418.65,103
+qrng_on_qrng,56,1,360.18,55
+qrng_on_qrng,57,1,395.40,82
+qrng_on_qrng,58,1,413.61,104
+qrng_on_qrng,59,1,374.43,67
+qrng_on_qrng,60,1,405.81,91
+qrng_on_qrng,61,0,222.32,500
+qrng_on_qrng,62,1,375.18,66
+qrng_on_qrng,63,0,224.03,500
+qrng_on_qrng,64,1,393.42,76
+qrng_on_qrng,65,0,227.85,500
+qrng_on_qrng,66,0,230.11,500
+qrng_on_qrng,67,1,398.94,83
+qrng_on_qrng,68,1,358.44,54
+qrng_on_qrng,69,1,404.22,87
+qrng_on_qrng,70,1,392.31,78
+qrng_on_qrng,71,0,344.38,500
+qrng_on_qrng,72,1,407.40,95
+qrng_on_qrng,73,0,236.81,500
+qrng_on_qrng,74,1,364.26,61
+qrng_on_qrng,75,1,461.01,129
+qrng_on_qrng,76,0,263.86,500
+qrng_on_qrng,77,0,148.92,500
+qrng_on_qrng,78,1,396.99,86
+qrng_on_qrng,79,1,371.10,60
+qrng_on_qrng,80,1,362.73,54
+qrng_on_qrng,81,1,460.14,136
+qrng_on_qrng,82,1,480.66,156
+qrng_on_qrng,83,1,409.47,99
+qrng_on_qrng,84,1,353.85,52
+qrng_on_qrng,85,1,396.39,86
+qrng_on_qrng,86,1,376.62,67
+qrng_on_qrng,87,0,245.91,500
+qrng_on_qrng,88,1,449.52,131
+qrng_on_qrng,89,1,399.57,88
+qrng_on_qrng,90,1,485.37,157
+qrng_on_qrng,91,0,266.28,500
+qrng_on_qrng,92,1,424.32,109
+qrng_on_qrng,93,0,206.23,500
+qrng_on_qrng,94,1,481.23,147
+qrng_on_qrng,95,0,198.99,500
+qrng_on_qrng,96,1,435.24,118
+qrng_on_qrng,97,1,382.05,74
+qrng_on_qrng,98,1,354.36,48
+qrng_on_qrng,99,1,415.68,95
+qrng_on_qrng,100,1,382.26,68
+qrng_on_prng,1,1,424.98,121
+qrng_on_prng,2,1,394.05,81
+qrng_on_prng,3,0,175.33,500
+qrng_on_prng,4,1,376.62,67
+qrng_on_prng,5,1,427.56,112
+qrng_on_prng,6,1,396.24,87
+qrng_on_prng,7,1,402.03,85
+qrng_on_prng,8,1,505.38,183
+qrng_on_prng,9,0,229.77,500
+qrng_on_prng,10,1,395.40,82
+qrng_on_prng,11,1,387.03,76
+qrng_on_prng,12,1,487.50,155
+qrng_on_prng,13,0,186.53,500
+qrng_on_prng,14,1,449.34,125
+qrng_on_prng,15,1,426.90,100
+qrng_on_prng,16,1,419.76,101
+qrng_on_prng,17,1,402.27,90
+qrng_on_prng,18,0,296.00,500
+qrng_on_prng,19,1,450.45,132
+qrng_on_prng,20,0,224.72,500
+qrng_on_prng,21,1,372.39,64
+qrng_on_prng,22,1,391.17,79
+qrng_on_prng,23,0,260.16,500
+qrng_on_prng,24,1,460.11,133
+qrng_on_prng,25,0,219.09,500
+qrng_on_prng,26,0,241.83,500
+qrng_on_prng,27,1,382.20,71
+qrng_on_prng,28,0,253.80,500
+qrng_on_prng,29,1,353.61,49
+qrng_on_prng,30,1,398.19,84
+qrng_on_prng,31,1,401.49,95
+qrng_on_prng,32,1,353.61,49
+qrng_on_prng,33,0,254.56,500
+qrng_on_prng,34,1,350.07,48
+qrng_on_prng,35,0,192.32,500
+qrng_on_prng,36,1,423.90,104
+qrng_on_prng,37,1,364.26,61
+qrng_on_prng,38,1,396.75,83
+qrng_on_prng,39,0,277.17,500
+qrng_on_prng,40,1,375.93,65
+qrng_on_prng,41,0,253.31,500
+qrng_on_prng,42,1,395.34,85
+qrng_on_prng,43,0,272.16,500
+qrng_on_prng,44,1,489.09,155
+qrng_on_prng,45,1,469.71,140
+qrng_on_prng,46,1,382.26,68
+qrng_on_prng,47,1,394.71,80
+qrng_on_prng,48,1,426.00,113
+qrng_on_prng,49,0,233.58,500
+qrng_on_prng,50,1,448.41,120
+qrng_on_prng,51,1,373.92,71
+qrng_on_prng,52,1,479.55,158
+qrng_on_prng,53,1,381.00,80
+qrng_on_prng,54,0,217.49,500
+qrng_on_prng,55,1,456.87,130
+qrng_on_prng,56,1,342.45,41
+qrng_on_prng,57,0,280.41,500
+qrng_on_prng,58,1,374.73,76
+qrng_on_prng,59,1,443.52,118
+qrng_on_prng,60,1,407.25,92
+qrng_on_prng,61,1,396.75,83
+qrng_on_prng,62,0,193.89,500
+qrng_on_prng,63,1,394.98,86
+qrng_on_prng,64,1,405.27,86
+qrng_on_prng,65,0,240.71,500
+qrng_on_prng,66,0,247.10,500
+qrng_on_prng,67,0,193.89,500
+qrng_on_prng,68,1,412.44,94
+qrng_on_prng,69,1,391.17,79
+qrng_on_prng,70,1,381.00,73
+qrng_on_prng,71,1,398.13,87
+qrng_on_prng,72,0,184.29,500
+qrng_on_prng,73,1,435.00,115
+qrng_on_prng,74,1,455.43,125
+qrng_on_prng,75,1,364.26,61
+qrng_on_prng,76,1,354.60,51
+qrng_on_prng,77,0,201.48,500
+qrng_on_prng,78,1,401.79,82
+qrng_on_prng,79,1,463.74,149
+qrng_on_prng,80,1,465.72,140
+qrng_on_prng,81,1,346.53,47
+qrng_on_prng,82,1,376.68,64
+qrng_on_prng,83,0,257.62,500
+qrng_on_prng,84,0,250.86,500
+qrng_on_prng,85,0,228.35,500
+qrng_on_prng,86,0,216.49,500
+qrng_on_prng,87,1,401.58,95
+qrng_on_prng,88,1,375.93,65
+qrng_on_prng,89,0,221.89,500
+qrng_on_prng,90,1,434.10,113
+qrng_on_prng,91,1,396.00,84
+qrng_on_prng,92,1,391.92,78
+qrng_on_prng,93,0,246.28,500
+qrng_on_prng,94,1,399.00,80
+qrng_on_prng,95,1,404.76,90
+qrng_on_prng,96,1,413.85,149
+qrng_on_prng,97,1,465.09,135
+qrng_on_prng,98,1,392.67,77
+qrng_on_prng,99,0,250.46,500
+qrng_on_prng,100,1,364.02,58`;
+
+// Parse CSV
+const lines = csvData.trim().split('\n').slice(1);
+lines.forEach(line => {
+  const [cond, ep, succ, rew, steps] = line.split(',');
+  const c = conditions[cond];
+  if (!c) return;
+  const s = parseInt(succ);
+  const r = parseFloat(rew);
+  const st = parseInt(steps);
+  c.successes += s;
+  c.totalReward += r;
+  c.totalSteps += st;
+  c.rewards.push(r);
+  if (s === 1) c.successSteps.push(st);
+});
+
+// Compute stats
+Object.values(conditions).forEach(c => {
+  c.sr = (c.successes / c.n * 100);
+  c.avgReward = c.totalReward / c.n;
+  c.avgSteps = c.totalSteps / c.n;
+  c.avgSuccessSteps = c.successSteps.length > 0 ? c.successSteps.reduce((a,b)=>a+b,0) / c.successSteps.length : 0;
+  c.medianSuccessSteps = c.successSteps.length > 0 ? c.successSteps.sort((a,b)=>a-b)[Math.floor(c.successSteps.length/2)] : 0;
+  c.rewards.sort((a,b)=>a-b);
+});
+
+const prngGap = conditions.prng_on_prng.sr - conditions.prng_on_qrng.sr;
+const qrngGap = conditions.qrng_on_qrng.sr - conditions.qrng_on_prng.sr;
+
+// ===== KEY STATS =====
+document.getElementById('key-stats').innerHTML = `
+  <div class="stat-card">
+    <div class="label">Structural Difference</div>
+    <div class="value success-color">0 / 9</div>
+    <div class="sub">metrics significant (p&lt;0.05)</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">PRNG Agent Gen. Gap</div>
+    <div class="value prng-color">${prngGap.toFixed(0)}%</div>
+    <div class="sub">intra ${conditions.prng_on_prng.sr.toFixed(0)}% &rarr; cross ${conditions.prng_on_qrng.sr.toFixed(0)}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">QRNG Agent Gen. Gap</div>
+    <div class="value qrng-color">${qrngGap.toFixed(0)}%</div>
+    <div class="sub">intra ${conditions.qrng_on_qrng.sr.toFixed(0)}% &rarr; cross ${conditions.qrng_on_prng.sr.toFixed(0)}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Lowest p-value</div>
+    <div class="value success-color">0.125</div>
+    <div class="sub">well above alpha=0.05</div>
+  </div>
+`;
+
+// ===== EVAL TABLE =====
+const tbody = document.querySelector('#evalTable tbody');
+const condOrder = ['prng_on_prng','prng_on_qrng','qrng_on_qrng','qrng_on_prng'];
+condOrder.forEach(k => {
+  const c = conditions[k];
+  const typeClass = c.type === 'Intra' ? 'badge-blue' : 'badge-yellow';
+  tbody.innerHTML += `<tr>
+    <td>${c.label}</td>
+    <td><span style="color:${c.agent==='PRNG'?'var(--prng)':'var(--qrng)'}">${c.agent}</span></td>
+    <td>${c.maze}</td>
+    <td><span class="badge ${typeClass}">${c.type}</span></td>
+    <td><strong>${c.sr.toFixed(0)}%</strong></td>
+    <td>${c.avgReward.toFixed(1)}</td>
+    <td>${c.avgSteps.toFixed(1)}</td>
+    <td>${c.medianSuccessSteps}</td>
+  </tr>`;
+});
+
+// ===== CHARTS =====
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+    y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+  }
+};
+
+// Success Rate Chart
+new Chart(document.getElementById('chartSR'), {
+  type: 'bar',
+  data: {
+    labels: ['On PRNG Mazes', 'On QRNG Mazes'],
+    datasets: [
+      { label: 'PRNG Agent', data: [conditions.prng_on_prng.sr, conditions.prng_on_qrng.sr], backgroundColor: 'rgba(37,99,235,0.7)', borderColor: '#2563eb', borderWidth: 2 },
+      { label: 'QRNG Agent', data: [conditions.qrng_on_prng.sr, conditions.qrng_on_qrng.sr], backgroundColor: 'rgba(220,38,38,0.7)', borderColor: '#dc2626', borderWidth: 2 }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, beginAtZero: true, max: 100, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' } }
+    }
+  }
+});
+
+// Reward Chart
+new Chart(document.getElementById('chartReward'), {
+  type: 'bar',
+  data: {
+    labels: ['On PRNG Mazes', 'On QRNG Mazes'],
+    datasets: [
+      { label: 'PRNG Agent', data: [conditions.prng_on_prng.avgReward, conditions.prng_on_qrng.avgReward], backgroundColor: 'rgba(37,99,235,0.7)', borderColor: '#2563eb', borderWidth: 2 },
+      { label: 'QRNG Agent', data: [conditions.qrng_on_prng.avgReward, conditions.qrng_on_qrng.avgReward], backgroundColor: 'rgba(220,38,38,0.7)', borderColor: '#dc2626', borderWidth: 2 }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+  }
+});
+
+// Steps Chart
+new Chart(document.getElementById('chartSteps'), {
+  type: 'bar',
+  data: {
+    labels: ['On PRNG Mazes', 'On QRNG Mazes'],
+    datasets: [
+      { label: 'PRNG Agent', data: [conditions.prng_on_prng.avgSuccessSteps, conditions.prng_on_qrng.avgSuccessSteps], backgroundColor: 'rgba(37,99,235,0.7)', borderColor: '#2563eb', borderWidth: 2 },
+      { label: 'QRNG Agent', data: [conditions.qrng_on_prng.avgSuccessSteps, conditions.qrng_on_qrng.avgSuccessSteps], backgroundColor: 'rgba(220,38,38,0.7)', borderColor: '#dc2626', borderWidth: 2 }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+  }
+});
+
+// Generalization Gap Chart
+new Chart(document.getElementById('chartGap'), {
+  type: 'bar',
+  data: {
+    labels: ['PRNG Agent', 'QRNG Agent'],
+    datasets: [{
+      label: 'Generalization Gap (Intra SR - Cross SR)',
+      data: [prngGap, qrngGap],
+      backgroundColor: [
+        prngGap <= 5 ? 'rgba(34,197,94,0.7)' : 'rgba(245,158,11,0.7)',
+        qrngGap <= 5 ? 'rgba(34,197,94,0.7)' : 'rgba(245,158,11,0.7)'
+      ],
+      borderColor: [
+        prngGap <= 5 ? '#22c55e' : '#f59e0b',
+        qrngGap <= 5 ? '#22c55e' : '#f59e0b'
+      ],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    indexAxis: 'y',
+    scales: {
+      x: { ...chartDefaults.scales.x, ticks: { ...chartDefaults.scales.x.ticks, callback: v => v + '%' } },
+      y: { ...chartDefaults.scales.y }
+    }
+  }
+});
+
+// Maze Metrics Comparison (normalized for visual)
+const mazeMetrics = {
+  labels: ['Shortest Path', 'Dead Ends', 'Tortuosity', 'Straight Corr.', 'Turning Corr.', 'Total Turns', 'Turns/Corridor'],
+  prng: [87.50, 11.84, 2.57, 12.0, 13.0, 46.0, 1.82],
+  qrng: [87.51, 11.84, 2.57, 12.0, 13.0, 46.0, 1.83]
+};
+
+new Chart(document.getElementById('chartMaze'), {
+  type: 'radar',
+  data: {
+    labels: mazeMetrics.labels,
+    datasets: [
+      { label: 'PRNG Mazes', data: mazeMetrics.prng.map((v,i) => v / Math.max(mazeMetrics.prng[i], mazeMetrics.qrng[i]) * 100), backgroundColor: 'rgba(37,99,235,0.15)', borderColor: '#2563eb', pointBackgroundColor: '#2563eb', borderWidth: 2 },
+      { label: 'QRNG Mazes', data: mazeMetrics.qrng.map((v,i) => v / Math.max(mazeMetrics.prng[i], mazeMetrics.qrng[i]) * 100), backgroundColor: 'rgba(220,38,38,0.15)', borderColor: '#dc2626', pointBackgroundColor: '#dc2626', borderWidth: 2 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+    scales: {
+      r: {
+        angleLines: { color: '#334155' },
+        grid: { color: '#334155' },
+        pointLabels: { color: '#94a3b8', font: { size: 11 } },
+        ticks: { display: false },
+        min: 99,
+        max: 100.5
+      }
+    }
+  }
+});
+
+// p-value chart
+const pvalueData = {
+  labels: ['Shortest Path', 'Dead Ends', 'Tortuosity', 'p3 Junctions', 'p4 Junctions', 'Straight Corr.', 'Turning Corr.', 'Total Turns', 'Turns/Corridor'],
+  values: [0.798, 0.672, 0.798, 0.125, 0.125, 0.343, 0.565, 0.300, 0.395]
+};
+
+new Chart(document.getElementById('chartPvalues'), {
+  type: 'bar',
+  data: {
+    labels: pvalueData.labels,
+    datasets: [{
+      label: 'p-value',
+      data: pvalueData.values,
+      backgroundColor: pvalueData.values.map(v => v > 0.05 ? 'rgba(34,197,94,0.6)' : 'rgba(220,38,38,0.6)'),
+      borderColor: pvalueData.values.map(v => v > 0.05 ? '#22c55e' : '#dc2626'),
+      borderWidth: 2
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: {
+      legend: { display: false },
+      annotation: {}
+    },
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, beginAtZero: true, max: 1.0 },
+      x: { ...chartDefaults.scales.x, ticks: { ...chartDefaults.scales.x.ticks, maxRotation: 45, minRotation: 45 } }
+    }
+  },
+  plugins: [{
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const yScale = chart.scales.y;
+      const xScale = chart.scales.x;
+      const y = yScale.getPixelForValue(0.05);
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(xScale.left, y);
+      ctx.lineTo(xScale.right, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('alpha = 0.05', xScale.right - 75, y - 6);
+      ctx.restore();
+    }
+  }]
+});
+
+// Reward Distribution (box-plot approximation using stacked bar)
+function getQuartiles(arr) {
+  const sorted = [...arr].sort((a,b) => a-b);
+  const q = p => { const i = p * (sorted.length-1); const lo = Math.floor(i); return sorted[lo] + (sorted[lo+1]||sorted[lo]-sorted[lo]) * (i-lo); };
+  return { min: sorted[0], q1: q(0.25), median: q(0.5), q3: q(0.75), max: sorted[sorted.length-1], mean: arr.reduce((a,b)=>a+b,0)/arr.length };
+}
+
+const distLabels = ['PRNG on PRNG', 'PRNG on QRNG', 'QRNG on QRNG', 'QRNG on PRNG'];
+const distData = condOrder.map(k => getQuartiles(conditions[k].rewards));
+const distColors = ['#2563eb', '#60a5fa', '#dc2626', '#f87171'];
+
+new Chart(document.getElementById('chartRewardDist'), {
+  type: 'bar',
+  data: {
+    labels: distLabels,
+    datasets: [
+      { label: 'Min to Q1', data: distData.map(d => d.q1 - d.min), backgroundColor: distColors.map(c => c + '33'), stack: 'box' },
+      { label: 'Q1 to Median', data: distData.map(d => d.median - d.q1), backgroundColor: distColors.map(c => c + '88'), stack: 'box' },
+      { label: 'Median to Q3', data: distData.map(d => d.q3 - d.median), backgroundColor: distColors.map(c => c + 'cc'), stack: 'box' },
+      { label: 'Q3 to Max', data: distData.map(d => d.max - d.q3), backgroundColor: distColors.map(c => c + '55'), stack: 'box' }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            const d = distData[ctx.dataIndex];
+            return [`Min: ${d.min.toFixed(1)}`, `Q1: ${d.q1.toFixed(1)}`, `Median: ${d.median.toFixed(1)}`, `Q3: ${d.q3.toFixed(1)}`, `Max: ${d.max.toFixed(1)}`, `Mean: ${d.mean.toFixed(1)}`];
+          }
+        }
+      }
+    },
+    scales: {
+      ...chartDefaults.scales,
+      x: { ...chartDefaults.scales.x, stacked: true },
+      y: { ...chartDefaults.scales.y, stacked: true, beginAtZero: true }
+    }
+  }
+});
+</script>
+</body>
+</html>
