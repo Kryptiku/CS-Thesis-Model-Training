@@ -1,0 +1,37 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# === Seeds (large CSVs, provide separately) ===
+seeds/*.csv
+
+# === Trained Models (large binaries) ===
+*/models/*.zip
+
+# === Generated Outputs ===
+*/outputs/training_logs/*
+*/outputs/training_reports/*
+*/outputs/evaluation_results/*
+*/outputs/maze_metrics/*
+*/outputs/statistical_analysis/*
+
+# === Keep empty directory structure ===
+!**/.gitkeep
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
