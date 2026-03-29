@@ -13,6 +13,7 @@ from gymnasium import spaces
 import random
 import pandas as pd
 import os
+import argparse
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from datetime import datetime
@@ -214,8 +215,8 @@ class EvaluationRunner:
             print(f"❌ Error loading {csv_path}: {e}")
             return []
     
-    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=100, seed_offset=40000):
-        """Evaluate a single agent on given seed list, offset by seed_offset (default: 40,000 for unseen mazes)"""
+    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=100, seed_offset=50000):
+        """Evaluate a single agent on given seed list, offset by seed_offset (default: 50,000 for unseen mazes)"""
         seed_type = "PRNG" if "PRNG" in seed_type_name else "QRNG"
         
         successes = []
@@ -278,7 +279,7 @@ class EvaluationRunner:
             'steps': steps_taken
         }
     
-    def run_full_evaluation(self, num_episodes=100, seed_offset=40000):
+    def run_full_evaluation(self, num_episodes=100, seed_offset=50000):
         """Run all 4 evaluation conditions on unseen mazes"""
         print("\n" + "="*70)
         print("COMPREHENSIVE AGENT EVALUATION ON UNSEEN MAZES - Train 19")
@@ -323,7 +324,7 @@ class EvaluationRunner:
             'qrng_gap': qrng_gap
         }
     
-    def generate_report(self, results, output_file="evaluation_report.html"):
+    def generate_report(self, results, output_file="evaluation_report.html", seed_offset=50000, num_episodes=100):
         """Generate HTML report"""
         gaps = self.compute_generalization_gap(results)
         
@@ -359,9 +360,9 @@ class EvaluationRunner:
     <div class="container">
         <h1>🤖 Comprehensive Agent Evaluation Report - Train 19 (UNSEEN MAZES)</h1>
         
-        <div class="unseen-badge">✓ EVALUATED ON NOVEL MAZES (Seed Offset: 40,000+)</div>
+        <div class="unseen-badge">✓ EVALUATED ON NOVEL MAZES (Seed Offset: {seed_offset:,}+)</div>
         
-        <p>Trained on both PRNG and QRNG randomness sources. Evaluated on completely novel mazes from both distributions (seeds 40,000 onwards).</p>
+        <p>Trained on both PRNG and QRNG randomness sources. Evaluated on completely novel mazes from both distributions (seeds {seed_offset:,} onwards).</p>
         
         <h2>Key Performance Metrics</h2>
         <div class="metrics-grid">
@@ -498,7 +499,7 @@ class EvaluationRunner:
         
         <div class="footer">
             <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            <p>Evaluation: 100 episodes × 4 conditions | Seed Offset: 40,000+ (all novel/unseen mazes)</p>
+            <p>Evaluation: {num_episodes} episodes × 4 conditions | Seed Offset: {seed_offset:,}+ (all novel/unseen mazes)</p>
             <p>Frame Stacking: n_stack=4 | Deterministic Policy Evaluation</p>
         </div>
     </div>
@@ -534,42 +535,66 @@ class EvaluationRunner:
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    PPO_DIR = os.path.dirname(SCRIPT_DIR)              # ppo/
-    PROJECT_ROOT = os.path.dirname(PPO_DIR)             # CS-Thesis-Model-Training/
-
-    PRNG_MODEL = os.path.join(PPO_DIR, "models", "PPO_20x20_Manhattan (MAIN) PRNG - 19 UNIQUE MAZES")
-    QRNG_MODEL = os.path.join(PPO_DIR, "models", "PPO_20x20_Manhattan (MAIN) QRNG - 19 UNIQUE MAZES")
-
-    PRNG_SEEDS = os.path.join(PROJECT_ROOT, "seeds", "prng_seeds.csv")
-    QRNG_SEEDS = os.path.join(PROJECT_ROOT, "seeds", "qrng_seeds.csv")
-
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    
+    PRNG_MODEL = os.path.join(BASE_DIR, "PPO_20x20_Manhattan (MAIN) PRNG - 19 UNIQUE MAZES")
+    QRNG_MODEL = os.path.join(BASE_DIR, "PPO_20x20_Manhattan (MAIN) QRNG - 19 UNIQUE MAZES")
+    
+    PRNG_SEEDS = os.path.join(BASE_DIR, "prng_seeds.csv")
+    QRNG_SEEDS = os.path.join(BASE_DIR, "qrng_seeds.csv")
+    
     print("="*70)
     print("CONFIGURATION CHECK")
     print("="*70)
-    for path, name in [(PRNG_MODEL + ".zip", "PRNG model"),
+    for path, name in [(PRNG_MODEL + ".zip", "PRNG model"), 
                        (QRNG_MODEL + ".zip", "QRNG model"),
                        (PRNG_SEEDS, "PRNG seeds"),
                        (QRNG_SEEDS, "QRNG seeds")]:
         status = "✅" if os.path.exists(path) else "❌"
         print(f"{status} {name}")
-
+    
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='Evaluate PRNG and QRNG trained agents on unseen mazes',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  python evaluate_agents_comprehensive.py --offset 40000 --episodes 100
+  python evaluate_agents_comprehensive.py --offset 50000 --episodes 50
+  python evaluate_agents_comprehensive.py (uses defaults: offset=50000, episodes=100)
+        """
+    )
+    parser.add_argument(
+        '--offset',
+        type=int,
+        default=50000,
+        help='Seed offset for starting maze evaluation (default: 50000)'
+    )
+    parser.add_argument(
+        '--episodes',
+        type=int,
+        default=100,
+        help='Number of episodes to evaluate (default: 100)'
+    )
+    args = parser.parse_args()
+    
+    print(f"\n📋 Configuration: offset={args.offset:,}, episodes={args.episodes}")
+    
     try:
         evaluator = EvaluationRunner(PRNG_MODEL, QRNG_MODEL, PRNG_SEEDS, QRNG_SEEDS)
-        results = evaluator.run_full_evaluation(num_episodes=100, seed_offset=40000)
-
-        output_dir = os.path.join(PPO_DIR, "outputs", "evaluation_results")
+        results = evaluator.run_full_evaluation(num_episodes=args.episodes, seed_offset=args.offset)
+        
+        output_dir = os.path.join(BASE_DIR, "evaluation_results")
         os.makedirs(output_dir, exist_ok=True)
         
         report_path = os.path.join(output_dir, "evaluation_report.html")
         csv_path = os.path.join(output_dir, "evaluation_results.csv")
         
-        evaluator.generate_report(results, report_path)
+        evaluator.generate_report(results, report_path, seed_offset=args.offset, num_episodes=args.episodes)
         evaluator.save_csv_results(results, csv_path)
         
         gaps = evaluator.compute_generalization_gap(results)
         print("\n" + "="*70)
-        print("EVALUATION SUMMARY (UNSEEN MAZES - OFFSET 40,000+)")
+        print(f"EVALUATION SUMMARY (UNSEEN MAZES - OFFSET {args.offset:,})")
         print("="*70)
         print(f"\n📊 PRNG Agent (Novel Mazes):")
         print(f"   Intra-distribution SR:  {results['prng_on_prng']['success_rate']:.2f}%")
