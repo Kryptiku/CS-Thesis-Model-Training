@@ -1,5 +1,5 @@
 """
-Comprehensive Agent Evaluation Script - Train 19 (Frame Stacking)
+
 Evaluates both PRNG and QRNG trained agents on novel mazes with:
 - Success Rate % (SR)
 - Reward (navigation quality)
