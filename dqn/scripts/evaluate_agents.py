@@ -540,8 +540,8 @@ if __name__ == "__main__":
     MODELS_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "models")
     SEEDS_DIR = os.path.join(BASE_DIR, "seeds")
     
-    PRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-PRNG-trial-2")
-    QRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-QRNG-trial-2")
+    PRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-PRNG-trial-3")
+    QRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-QRNG-trial-3")
     
     PRNG_SEEDS = os.path.join(SEEDS_DIR, "prng_seeds.csv")
     QRNG_SEEDS = os.path.join(SEEDS_DIR, "qrng_seeds.csv")
