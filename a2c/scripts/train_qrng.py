@@ -10,6 +10,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack, Dummy
 from stable_baselines3.common.callbacks import BaseCallback
 from tqdm import tqdm
 import os
+import sys
 import time
 import csv
 from collections import deque
@@ -615,15 +616,23 @@ class TrainingMetricsReport:
 
 # --- MAIN ---
 if __name__ == "__main__":
+    # ===== RUN NUMBER =====
+    if len(sys.argv) > 1:
+        RUN_NUMBER = int(sys.argv[1])
+    else:
+        print("Usage: python3 train_qrng.py <run_number>")
+        print("Example: python3 train_qrng.py 1")
+        sys.exit(1)
+
     # ===== PATH SETUP =====
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     A2C_DIR = os.path.dirname(SCRIPT_DIR)              # a2c/
     PROJECT_ROOT = os.path.dirname(A2C_DIR)             # CS-Thesis-Model-Training/
 
     SEED_CSV_PATH = os.path.join(PROJECT_ROOT, "seeds", "qrng_seeds.csv")
-    MODEL_SAVE_PATH = os.path.join(A2C_DIR, "models", "A2C_20x20_Manhattan (MAIN) QRNG - UNIQUE MAZES")
-    LOG_FILE = os.path.join(A2C_DIR, "outputs", "training_logs", "training_log_qrng.csv")
-    REPORT_DIR = os.path.join(A2C_DIR, "outputs", "training_reports")
+    MODEL_SAVE_PATH = os.path.join(A2C_DIR, "models", f"run_{RUN_NUMBER}", "A2C_QRNG")
+    LOG_FILE = os.path.join(A2C_DIR, "outputs", "training_logs", f"log_{RUN_NUMBER}", "training_log_qrng.csv")
+    REPORT_DIR = os.path.join(A2C_DIR, "outputs", "training_reports", f"report_{RUN_NUMBER}")
 
     # Create output directories
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -641,7 +650,7 @@ if __name__ == "__main__":
     # MAXIMIZE HARDWARE
     NUM_PARALLEL_ENVS = 12
     TOTAL_TIMESTEPS = 10_000_000
-    MODEL_NAME = "A2C_20x20_Manhattan (MAIN) QRNG - UNIQUE MAZES"
+    MODEL_NAME = f"A2C_QRNG_run_{RUN_NUMBER}"
 
     print(f"--- Starting A2C Training ---")
     print(f"Algorithm: A2C (Advantage Actor-Critic)")

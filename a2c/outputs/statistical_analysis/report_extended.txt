@@ -1,0 +1,55 @@
+========================================================================================
+STATISTICAL ANALYSIS REPORT: PRNG vs QRNG MAZE METRICS
+========================================================================================
+Generated: 2026-04-01 19:52:18
+PRNG file: a2c/outputs/maze_metrics/prng_metrics.csv
+QRNG file: a2c/outputs/maze_metrics/qrng_metrics.csv
+Significance level (alpha): 0.05
+
+PART 1: SHAPIRO-WILK NORMALITY
+----------------------------------------------------------------------------------------
+Decision: if p < alpha, reject normality.
+
+Metric: shortest_path_len
+  PRNG: n_total=76801, n_used=5000, W=0.972093, p=3.71e-30, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974412, p=4.88e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: dead_end_count
+  PRNG: n_total=76801, n_used=5000, W=0.975080, p=1.06e-28, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974935, p=8.95e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: tortuosity
+  PRNG: n_total=76801, n_used=5000, W=0.976114, p=3.64e-28, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.975511, p=1.77e-28, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+PART 2: UNIVARIATE GROUP COMPARISONS
+----------------------------------------------------------------------------------------
+Rule: if both groups are normal, interpret Welch t-test; otherwise interpret Mann-Whitney U.
+
+Metric: shortest_path_len | Test: Mann-Whitney U
+  Medians: PRNG=84.000000, QRNG=84.000000, U=2951379324.000, p=0.798195
+  Significant at alpha=0.05: False
+
+Metric: dead_end_count | Test: Mann-Whitney U
+  Medians: PRNG=12.000000, QRNG=12.000000, U=2952793045.000, p=0.671527
+  Significant at alpha=0.05: False
+
+Metric: tortuosity | Test: Mann-Whitney U
+  Medians: PRNG=2.470588, QRNG=2.470588, U=2951379324.000, p=0.798195
+  Significant at alpha=0.05: False
+
+PART 3: TRUE MULTIVARIATE PERMANOVA
+----------------------------------------------------------------------------------------
+PERMANOVA could not be computed: scikit-bio is not installed. PERMANOVA requires scikit-bio and, on this Python environment, installing it currently fails because biom-format needs Microsoft C++ Build Tools.
+
+SUMMARY
+----------------------------------------------------------------------------------------
+Univariate significant metrics: 0/3
+Multivariate PERMANOVA: not available
+========================================================================================

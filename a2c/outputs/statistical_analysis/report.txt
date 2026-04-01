@@ -1,0 +1,115 @@
+========================================================================================
+STATISTICAL ANALYSIS REPORT: PRNG vs QRNG MAZE METRICS
+========================================================================================
+Generated: 2026-04-01 19:52:17
+PRNG file: a2c/outputs/maze_metrics/prng_metrics.csv
+QRNG file: a2c/outputs/maze_metrics/qrng_metrics.csv
+Significance level (alpha): 0.05
+
+PART 1: SHAPIRO-WILK NORMALITY
+----------------------------------------------------------------------------------------
+Decision: if p < alpha, reject normality.
+
+Metric: shortest_path_len
+  PRNG: n_total=76801, n_used=5000, W=0.972093, p=3.71e-30, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974412, p=4.88e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: dead_end_count
+  PRNG: n_total=76801, n_used=5000, W=0.975080, p=1.06e-28, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974935, p=8.95e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: tortuosity
+  PRNG: n_total=76801, n_used=5000, W=0.976114, p=3.64e-28, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.975511, p=1.77e-28, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: p3
+  PRNG: n_total=76801, n_used=5000, W=0.306606, p=2.23e-87, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.305184, p=2.00e-87, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: p4
+  PRNG: n_total=76801, n_used=5000, W=0.313526, p=3.75e-87, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.300414, p=1.40e-87, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: straight_corridors
+  PRNG: n_total=76801, n_used=5000, W=0.986758, p=2.89e-21, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.987961, p=3.01e-20, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: turning_corridors
+  PRNG: n_total=76801, n_used=5000, W=0.980752, p=1.61e-25, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.981127, p=2.76e-25, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: turns_total
+  PRNG: n_total=76801, n_used=5000, W=0.995893, p=1.29e-10, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.995713, p=6.19e-11, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: mean_turns_per_corridor
+  PRNG: n_total=76801, n_used=5000, W=0.969356, p=2.17e-31, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.962860, p=5.29e-34, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+PART 2: UNIVARIATE GROUP COMPARISONS
+----------------------------------------------------------------------------------------
+Rule: if both groups are normal, interpret Welch t-test; otherwise interpret Mann-Whitney U.
+
+Metric: shortest_path_len | Test: Mann-Whitney U
+  Medians: PRNG=84.000000, QRNG=84.000000, U=2951379324.000, p=0.798195
+  Significant at alpha=0.05: False
+
+Metric: dead_end_count | Test: Mann-Whitney U
+  Medians: PRNG=12.000000, QRNG=12.000000, U=2952793045.000, p=0.671527
+  Significant at alpha=0.05: False
+
+Metric: tortuosity | Test: Mann-Whitney U
+  Medians: PRNG=2.470588, QRNG=2.470588, U=2951379324.000, p=0.798195
+  Significant at alpha=0.05: False
+
+Metric: p3 | Test: Mann-Whitney U
+  Medians: PRNG=1.000000, QRNG=1.000000, U=2942843616.000, p=0.125225
+  Significant at alpha=0.05: False
+
+Metric: p4 | Test: Mann-Whitney U
+  Medians: PRNG=0.000000, QRNG=0.000000, U=2955473184.000, p=0.125225
+  Significant at alpha=0.05: False
+
+Metric: straight_corridors | Test: Mann-Whitney U
+  Medians: PRNG=12.000000, QRNG=12.000000, U=2957372030.000, p=0.342505
+  Significant at alpha=0.05: False
+
+Metric: turning_corridors | Test: Mann-Whitney U
+  Medians: PRNG=13.000000, QRNG=13.000000, U=2944203066.500, p=0.564524
+  Significant at alpha=0.05: False
+
+Metric: turns_total | Test: Mann-Whitney U
+  Medians: PRNG=46.000000, QRNG=46.000000, U=2940175813.500, p=0.300265
+  Significant at alpha=0.05: False
+
+Metric: mean_turns_per_corridor | Test: Mann-Whitney U
+  Medians: PRNG=1.777778, QRNG=1.777778, U=2941772091.000, p=0.395256
+  Significant at alpha=0.05: False
+
+PART 3: TRUE MULTIVARIATE PERMANOVA
+----------------------------------------------------------------------------------------
+PERMANOVA could not be computed: scikit-bio is not installed. PERMANOVA requires scikit-bio and, on this Python environment, installing it currently fails because biom-format needs Microsoft C++ Build Tools.
+
+SUMMARY
+----------------------------------------------------------------------------------------
+Univariate significant metrics: 0/9
+Multivariate PERMANOVA: not available
+========================================================================================

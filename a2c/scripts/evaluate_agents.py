@@ -13,6 +13,7 @@ from gymnasium import spaces
 import random
 import pandas as pd
 import os
+import sys
 from stable_baselines3 import A2C
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from datetime import datetime
@@ -200,7 +201,7 @@ class EvaluationRunner:
         print(f"✅ Loaded {len(self.prng_seeds)} PRNG seeds total")
         print(f"✅ Loaded {len(self.qrng_seeds)} QRNG seeds total")
         print(f"\n📌 EVALUATION ON UNSEEN MAZES:")
-        print(f"   Starting from seed index 40,000 (all novel/unseen)")
+        print(f"   Starting from seed index 50,000 (all novel/unseen)")
 
     def _load_seeds(self, csv_path):
         """Load seeds from CSV file"""
@@ -214,8 +215,8 @@ class EvaluationRunner:
             print(f"❌ Error loading {csv_path}: {e}")
             return []
 
-    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=100, seed_offset=40000):
-        """Evaluate a single agent on given seed list, offset by seed_offset (default: 40,000 for unseen mazes)"""
+    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=1000, seed_offset=50000):
+        """Evaluate a single agent on given seed list, offset by seed_offset (default: 50,000 for unseen mazes)"""
         seed_type = "PRNG" if "PRNG" in seed_type_name else "QRNG"
 
         successes = []
@@ -259,7 +260,7 @@ class EvaluationRunner:
             rewards.append(episode_reward)
             steps_taken.append(episode_steps)
 
-            if (episode + 1) % 10 == 0:
+            if (episode + 1) % 100 == 0:
                 print(f"    Completed {episode+1}/{num_episodes}")
 
         success_rate = np.mean(successes) * 100
@@ -277,7 +278,7 @@ class EvaluationRunner:
             'steps': steps_taken
         }
 
-    def run_full_evaluation(self, num_episodes=100, seed_offset=40000):
+    def run_full_evaluation(self, num_episodes=1000, seed_offset=50000):
         """Run all 4 evaluation conditions on unseen mazes"""
         print("\n" + "="*70)
         print("COMPREHENSIVE A2C AGENT EVALUATION ON UNSEEN MAZES")
@@ -358,9 +359,9 @@ class EvaluationRunner:
     <div class="container">
         <h1>🤖 A2C Comprehensive Agent Evaluation Report (UNSEEN MAZES)</h1>
 
-        <div class="unseen-badge">✓ EVALUATED ON NOVEL MAZES (Seed Offset: 40,000+)</div>
+        <div class="unseen-badge">✓ EVALUATED ON NOVEL MAZES (Seed Offset: 50,000+)</div>
 
-        <p>A2C agents trained on both PRNG and QRNG randomness sources. Evaluated on completely novel mazes from both distributions (seeds 40,000 onwards).</p>
+        <p>A2C agents trained on both PRNG and QRNG randomness sources. Evaluated on completely novel mazes from both distributions (seeds 50,000 onwards).</p>
 
         <h2>Key Performance Metrics</h2>
         <div class="metrics-grid">
@@ -497,7 +498,7 @@ class EvaluationRunner:
 
         <div class="footer">
             <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            <p>Algorithm: A2C (Advantage Actor-Critic) | Evaluation: 100 episodes x 4 conditions | Seed Offset: 40,000+ (all novel/unseen mazes)</p>
+            <p>Algorithm: A2C (Advantage Actor-Critic) | Evaluation: 1000 episodes x 4 conditions | Seed Offset: 50,000+ (all novel/unseen mazes)</p>
             <p>Frame Stacking: n_stack=4 | Deterministic Policy Evaluation</p>
         </div>
     </div>
@@ -533,18 +534,26 @@ class EvaluationRunner:
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
+    # ===== RUN NUMBER =====
+    if len(sys.argv) > 1:
+        RUN_NUMBER = int(sys.argv[1])
+    else:
+        print("Usage: python3 evaluate_agents.py <run_number>")
+        print("Example: python3 evaluate_agents.py 1")
+        sys.exit(1)
+
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     A2C_DIR = os.path.dirname(SCRIPT_DIR)              # a2c/
     PROJECT_ROOT = os.path.dirname(A2C_DIR)             # CS-Thesis-Model-Training/
 
-    PRNG_MODEL = os.path.join(A2C_DIR, "models", "A2C_20x20_Manhattan (MAIN) PRNG - UNIQUE MAZES")
-    QRNG_MODEL = os.path.join(A2C_DIR, "models", "A2C_20x20_Manhattan (MAIN) QRNG - UNIQUE MAZES")
+    PRNG_MODEL = os.path.join(A2C_DIR, "models", f"run_{RUN_NUMBER}", "A2C_PRNG")
+    QRNG_MODEL = os.path.join(A2C_DIR, "models", f"run_{RUN_NUMBER}", "A2C_QRNG")
 
     PRNG_SEEDS = os.path.join(PROJECT_ROOT, "seeds", "prng_seeds.csv")
     QRNG_SEEDS = os.path.join(PROJECT_ROOT, "seeds", "qrng_seeds.csv")
 
     print("="*70)
-    print("A2C CONFIGURATION CHECK")
+    print(f"A2C CONFIGURATION CHECK (RUN {RUN_NUMBER})")
     print("="*70)
     for path, name in [(PRNG_MODEL + ".zip", "PRNG A2C model"),
                        (QRNG_MODEL + ".zip", "QRNG A2C model"),
@@ -555,9 +564,9 @@ if __name__ == "__main__":
 
     try:
         evaluator = EvaluationRunner(PRNG_MODEL, QRNG_MODEL, PRNG_SEEDS, QRNG_SEEDS)
-        results = evaluator.run_full_evaluation(num_episodes=100, seed_offset=40000)
+        results = evaluator.run_full_evaluation(num_episodes=1000, seed_offset=50000)
 
-        output_dir = os.path.join(A2C_DIR, "outputs", "evaluation_results")
+        output_dir = os.path.join(A2C_DIR, "outputs", "evaluation_results", f"result_{RUN_NUMBER}")
         os.makedirs(output_dir, exist_ok=True)
 
         report_path = os.path.join(output_dir, "evaluation_report.html")
@@ -568,7 +577,7 @@ if __name__ == "__main__":
 
         gaps = evaluator.compute_generalization_gap(results)
         print("\n" + "="*70)
-        print("A2C EVALUATION SUMMARY (UNSEEN MAZES - OFFSET 40,000+)")
+        print("A2C EVALUATION SUMMARY (UNSEEN MAZES - OFFSET 50,000+)")
         print("="*70)
         print(f"\n📊 PRNG A2C Agent (Novel Mazes):")
         print(f"   Intra-distribution SR:  {results['prng_on_prng']['success_rate']:.2f}%")
