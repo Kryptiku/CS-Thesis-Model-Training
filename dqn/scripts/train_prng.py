@@ -626,7 +626,7 @@ if __name__ == "__main__":
     PROJECT_ROOT = os.path.dirname(DQN_DIR)             # CS-Thesis-Model-Training/
 
     SEED_CSV_PATH = os.path.join(PROJECT_ROOT, "seeds", "prng_seeds.csv")
-    MODEL_SAVE_PATH = os.path.join(DQN_DIR, "models", "DQN_20x20_Manhattan (MAIN) PRNG - 19 UNIQUE MAZES")
+    MODEL_SAVE_PATH = os.path.join(DQN_DIR, "models", "DQN_20x20_Manhattan-PRNG-trial")
     LOG_FILE = os.path.join(DQN_DIR, "outputs", "training_logs", "training_log_prng.csv")
     REPORT_DIR = os.path.join(DQN_DIR, "outputs", "training_reports")
 
@@ -641,7 +641,7 @@ if __name__ == "__main__":
     # MAXIMIZE HARDWARE
     NUM_PARALLEL_ENVS = 12
     TOTAL_TIMESTEPS = 10_000_000  # Extended training for better generalization
-    MODEL_NAME = "DQN_20x20_Manhattan (MAIN) PRNG - 19 UNIQUE MAZES"
+    MODEL_NAME = "DQN_20x20_Manhattan-PRNG-trial"
 
     print(f"--- Starting Hybrid DQN Training ---")
     print(f"Vision: 8 Rays (High Def)")

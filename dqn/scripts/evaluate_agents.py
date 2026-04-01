@@ -14,7 +14,7 @@ import random
 import pandas as pd
 import os
 import argparse
-from stable_baselines3 import PPO
+from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from datetime import datetime
 
@@ -182,14 +182,14 @@ class EvaluationRunner:
         print("="*70)
         
         try:
-            self.prng_model = PPO.load(prng_model_path)
+            self.prng_model = DQN.load(prng_model_path)
             print(f"✅ Loaded PRNG model")
         except Exception as e:
             print(f"❌ Error loading PRNG model: {e}")
             raise
         
         try:
-            self.qrng_model = PPO.load(qrng_model_path)
+            self.qrng_model = DQN.load(qrng_model_path)
             print(f"✅ Loaded QRNG model")
         except Exception as e:
             print(f"❌ Error loading QRNG model: {e}")
@@ -215,7 +215,7 @@ class EvaluationRunner:
             print(f"❌ Error loading {csv_path}: {e}")
             return []
     
-    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=100, seed_offset=50000):
+    def evaluate_agent(self, model, seed_list, seed_type_name, num_episodes=1000, seed_offset=50000):
         """Evaluate a single agent on given seed list, offset by seed_offset (default: 50,000 for unseen mazes)"""
         seed_type = "PRNG" if "PRNG" in seed_type_name else "QRNG"
         
@@ -535,13 +535,16 @@ class EvaluationRunner:
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+    MODELS_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "models")
+    SEEDS_DIR = os.path.join(BASE_DIR, "seeds")
     
-    PRNG_MODEL = os.path.join(BASE_DIR, "PPO_20x20_Manhattan (MAIN) PRNG - 19 UNIQUE MAZES")
-    QRNG_MODEL = os.path.join(BASE_DIR, "PPO_20x20_Manhattan (MAIN) QRNG - 19 UNIQUE MAZES")
+    PRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-PRNG-trial-2")
+    QRNG_MODEL = os.path.join(MODELS_DIR, "DQN_20x20_Manhattan-QRNG-trial-2")
     
-    PRNG_SEEDS = os.path.join(BASE_DIR, "prng_seeds.csv")
-    QRNG_SEEDS = os.path.join(BASE_DIR, "qrng_seeds.csv")
+    PRNG_SEEDS = os.path.join(SEEDS_DIR, "prng_seeds.csv")
+    QRNG_SEEDS = os.path.join(SEEDS_DIR, "qrng_seeds.csv")
     
     print("="*70)
     print("CONFIGURATION CHECK")

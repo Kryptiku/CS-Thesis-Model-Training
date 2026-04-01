@@ -621,7 +621,7 @@ if __name__ == "__main__":
     PROJECT_ROOT = os.path.dirname(DQN_DIR)             # CS-Thesis-Model-Training/
 
     SEED_CSV_PATH = os.path.join(PROJECT_ROOT, "seeds", "qrng_seeds.csv")
-    MODEL_SAVE_PATH = os.path.join(DQN_DIR, "models", "DQN_20x20_Manhattan (MAIN) QRNG - 19 UNIQUE MAZES")
+    MODEL_SAVE_PATH = os.path.join(DQN_DIR, "models", "DQN_20x20_Manhattan-QRNG")
     LOG_FILE = os.path.join(DQN_DIR, "outputs", "training_logs", "training_log_qrng.csv")
     REPORT_DIR = os.path.join(DQN_DIR, "outputs", "training_reports")
 
