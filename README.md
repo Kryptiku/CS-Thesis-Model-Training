@@ -59,24 +59,28 @@ pip install scikit-bio
 
 ## PPO Pipeline
 
-### Step 1: Train Agents
+### Step 1: Train Agents (3 Runs per Seed Source)
 
-Train two separate PPO agents -- one on PRNG-seeded mazes, one on QRNG-seeded mazes.
+Train two PPO agents per run -- one on PRNG-seeded mazes and one on QRNG-seeded mazes -- and repeat this process for 3 independent runs.
 
 ```bash
-# Train PRNG agent (~10M timesteps)
+# Repeat for run = 1, 2, 3
 python3 ppo/scripts/train_prng.py
-
-# Train QRNG agent (~10M timesteps)
 python3 ppo/scripts/train_qrng.py
 ```
+
+After each run, archive outputs into run-specific folders before starting the next run (to avoid overwriting):
+
+- `ppo/outputs/training_logs/log_1/`, `log_2/`, `log_3/`
+- `ppo/outputs/training_reports/report_1/`, `report_2/`, `report_3/`
+- `ppo/models/` with run-specific model filenames (or run subfolders)
 
 **Outputs:**
 - `ppo/models/*.zip` -- trained model weights
 - `ppo/outputs/training_logs/` -- per-episode reward, success, steps
 - `ppo/outputs/training_reports/` -- HTML report with reward curves and success rate charts
 
-### Step 2: Evaluate Agents on Unseen Mazes
+### Step 2: Evaluate Agents on Unseen Mazes (Per Run)
 
 Runs 4 evaluation conditions (100 episodes each) using mazes from seed offset 40,000+ (never seen during training):
 
@@ -88,8 +92,15 @@ Runs 4 evaluation conditions (100 episodes each) using mazes from seed offset 40
 | 4 | QRNG model | Novel PRNG mazes | Cross-distribution |
 
 ```bash
+# Run evaluation after each training run (run 1, 2, 3)
 python3 ppo/scripts/evaluate_agents.py
 ```
+
+Archive each run's evaluation outputs into:
+
+- `ppo/outputs/evaluation_results/result_1/`
+- `ppo/outputs/evaluation_results/result_2/`
+- `ppo/outputs/evaluation_results/result_3/`
 
 **Outputs:**
 - `ppo/outputs/evaluation_results/evaluation_results.csv` -- per-episode results
@@ -135,24 +146,24 @@ python3 ppo/scripts/statistical_analysis_extended.py \
 
 ## A2C Pipeline
 
-### Step 1: Train Agents
+### Step 1: Train Agents (3 Runs per Seed Source)
 
-Train two separate A2C agents -- one on PRNG-seeded mazes, one on QRNG-seeded mazes.
+Train two A2C agents per run -- one on PRNG-seeded mazes and one on QRNG-seeded mazes -- and repeat this process for 3 independent runs.
 
 ```bash
-# Train PRNG agent (~10M timesteps)
+# Repeat for run = 1, 2, 3
 python3 a2c/scripts/train_prng.py
-
-# Train QRNG agent (~10M timesteps)
 python3 a2c/scripts/train_qrng.py
 ```
+
+After each run, archive outputs into run-specific folders before starting the next run.
 
 **Outputs:**
 - `a2c/models/*.zip` -- trained model weights
 - `a2c/outputs/training_logs/` -- per-episode reward, success, steps
 - `a2c/outputs/training_reports/` -- HTML report with reward curves and success rate charts
 
-### Step 2: Evaluate Agents on Unseen Mazes
+### Step 2: Evaluate Agents on Unseen Mazes (Per Run)
 
 Runs 4 evaluation conditions (100 episodes each) using mazes from seed offset 40,000+ (never seen during training):
 
@@ -164,8 +175,11 @@ Runs 4 evaluation conditions (100 episodes each) using mazes from seed offset 40
 | 4 | QRNG model | Novel PRNG mazes | Cross-distribution |
 
 ```bash
+# Run evaluation after each training run (run 1, 2, 3)
 python3 a2c/scripts/evaluate_agents.py
 ```
+
+Archive each run's evaluation outputs into run-specific result folders to keep runs separate.
 
 **Outputs:**
 - `a2c/outputs/evaluation_results/evaluation_results.csv` -- per-episode results
