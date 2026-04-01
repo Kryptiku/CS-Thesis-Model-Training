@@ -10,6 +10,12 @@ build/
 venv/
 env/
 
+<<<<<<< Updated upstream
+=======
+# === Seeds (large CSVs, provide separately) ===
+seeds/*.csv
+
+>>>>>>> Stashed changes
 # === Keep empty directory structure ===
 !**/.gitkeep
 
