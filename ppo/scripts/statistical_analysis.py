@@ -77,13 +77,26 @@ def shapiro_with_sampling(data, alpha, max_n, rng):
     }
 
 
-def run_univariate_test(metric, prng_data, qrng_data, alpha):
+def run_univariate_test(metric, prng_data, qrng_data, alpha, rng, max_per_group):
+    # Sample down to max_per_group if necessary (for consistency across tests)
+    n_prng_total = len(prng_data)
+    n_qrng_total = len(qrng_data)
+    
+    if len(prng_data) > max_per_group:
+        idx = rng.choice(len(prng_data), size=max_per_group, replace=False)
+        prng_data = prng_data[idx]
+    if len(qrng_data) > max_per_group:
+        idx = rng.choice(len(qrng_data), size=max_per_group, replace=False)
+        qrng_data = qrng_data[idx]
+    
     if len(prng_data) < 2 or len(qrng_data) < 2:
         return {
             "metric": metric,
             "test": "INSUFFICIENT_DATA",
             "p_value": np.nan,
             "significant": False,
+            "n_prng_total": n_prng_total,
+            "n_qrng_total": n_qrng_total,
         }
 
     # Welch as requested when normality is acceptable.
@@ -100,6 +113,8 @@ def run_univariate_test(metric, prng_data, qrng_data, alpha):
         "mean_qrng": float(np.mean(qrng_data)),
         "median_prng": float(np.median(prng_data)),
         "median_qrng": float(np.median(qrng_data)),
+        "n_prng_total": n_prng_total,
+        "n_qrng_total": n_qrng_total,
         "n_prng": len(prng_data),
         "n_qrng": len(qrng_data),
         "alpha": alpha,
@@ -218,6 +233,7 @@ def build_report_text(
     lines.append("PART 2: UNIVARIATE GROUP COMPARISONS")
     lines.append("-" * 88)
     lines.append("Rule: if both groups are normal, interpret Welch t-test; otherwise interpret Mann-Whitney U.")
+    lines.append("Note: Univariate tests use up to 5000 random samples per group (sampled with fixed seed).")
     lines.append("")
     univariate_sig = 0
     for metric in metrics:
@@ -241,6 +257,11 @@ def build_report_text(
                 f"  Medians: PRNG={row['median_prng']:.6f}, QRNG={row['median_qrng']:.6f}, "
                 f"U={row['mwu_u']:.3f}, p={format_p(p_value)}"
             )
+        # Show sample counts with note if sampled
+        if row.get("n_prng_total"):
+            lines.append(f"  Samples used: PRNG={row['n_prng']} of {row['n_prng_total']}, QRNG={row['n_qrng']} of {row['n_qrng_total']}")
+        else:
+            lines.append(f"  Samples used: PRNG={row['n_prng']}, QRNG={row['n_qrng']}")
         lines.append(f"  Significant at alpha={alpha}: {significant}")
         lines.append("")
         if significant:
@@ -287,8 +308,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Consistent PRNG vs QRNG statistical analysis with true multivariate PERMANOVA."
     )
-    parser.add_argument("--prng", required=True, help="PRNG metrics CSV file")
-    parser.add_argument("--qrng", required=True, help="QRNG metrics CSV file")
+    parser.add_argument("--prng", required=True, help="PRNG metrics CSV file (typically from maze_metrics folder)")
+    parser.add_argument("--qrng", required=True, help="QRNG metrics CSV file (typically from maze_metrics folder)")
     parser.add_argument("--output", default="statistical_analysis_report.txt", help="Output TXT report")
     parser.add_argument("--alpha", type=float, default=0.05, help="Significance level")
     parser.add_argument("--permanova-perms", type=int, default=1000, help="PERMANOVA permutations")
@@ -302,7 +323,7 @@ def parse_args():
         "--permanova-max-sample",
         type=int,
         default=5000,
-        help="Max N per group for PERMANOVA",
+        help="Max N per group for PERMANOVA and univariate tests (Mann-Whitney U and Welch t-test)",
     )
     parser.add_argument(
         "--metrics",
@@ -340,7 +361,7 @@ def main():
             "PRNG": shapiro_with_sampling(prng_vals, args.alpha, args.shapiro_max_sample, rng),
             "QRNG": shapiro_with_sampling(qrng_vals, args.alpha, args.shapiro_max_sample, rng),
         }
-        univariate_results[metric] = run_univariate_test(metric, prng_vals, qrng_vals, args.alpha)
+        univariate_results[metric] = run_univariate_test(metric, prng_vals, qrng_vals, args.alpha, rng, args.permanova_max_sample)
 
     # PERMANOVA over all selected non-normal metrics.
     non_normal_metrics = []

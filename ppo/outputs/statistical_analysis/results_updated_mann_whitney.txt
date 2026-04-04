@@ -1,0 +1,130 @@
+========================================================================================
+STATISTICAL ANALYSIS REPORT: PRNG vs QRNG MAZE METRICS
+========================================================================================
+Generated: 2026-04-04 22:35:59
+PRNG file: ../outputs/maze_metrics/prng_metrics.csv
+QRNG file: ../outputs/maze_metrics/qrng_metrics.csv
+Significance level (alpha): 0.05
+
+PART 1: SHAPIRO-WILK NORMALITY
+----------------------------------------------------------------------------------------
+Decision: if p < alpha, reject normality.
+
+Metric: shortest_path_len
+  PRNG: n_total=76801, n_used=5000, W=0.972093, p=3.71e-30, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974412, p=4.88e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: dead_end_count
+  PRNG: n_total=76801, n_used=5000, W=0.975326, p=1.42e-28, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.976404, p=5.19e-28, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: tortuosity
+  PRNG: n_total=76801, n_used=5000, W=0.974587, p=5.97e-29, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.974677, p=6.64e-29, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: p3
+  PRNG: n_total=76801, n_used=5000, W=0.314728, p=4.11e-87, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.306769, p=2.25e-87, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: p4
+  PRNG: n_total=76801, n_used=5000, W=0.312158, p=3.38e-87, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.307711, p=2.42e-87, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: straight_corridors
+  PRNG: n_total=76801, n_used=5000, W=0.986787, p=3.05e-21, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.988899, p=2.11e-19, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: turning_corridors
+  PRNG: n_total=76801, n_used=5000, W=0.981105, p=2.67e-25, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.980601, p=1.30e-25, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: turns_total
+  PRNG: n_total=76801, n_used=5000, W=0.995956, p=1.68e-10, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.996121, p=3.36e-10, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+Metric: mean_turns_per_corridor
+  PRNG: n_total=76801, n_used=5000, W=0.960235, p=5.87e-35, normal=False
+    Note: Sampled 5000 from 76801 for Shapiro-Wilk
+  QRNG: n_total=76800, n_used=5000, W=0.960626, p=8.08e-35, normal=False
+    Note: Sampled 5000 from 76800 for Shapiro-Wilk
+
+PART 2: UNIVARIATE GROUP COMPARISONS
+----------------------------------------------------------------------------------------
+Rule: if both groups are normal, interpret Welch t-test; otherwise interpret Mann-Whitney U.
+Note: Univariate tests use up to 5000 random samples per group (sampled with fixed seed).
+
+Metric: shortest_path_len | Test: Mann-Whitney U
+  Medians: PRNG=84.000000, QRNG=84.000000, U=12411470.000, p=0.539528
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: dead_end_count | Test: Mann-Whitney U
+  Medians: PRNG=12.000000, QRNG=12.000000, U=12724564.000, p=0.114952
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: tortuosity | Test: Mann-Whitney U
+  Medians: PRNG=2.470588, QRNG=2.470588, U=12375884.500, p=0.389716
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: p3 | Test: Mann-Whitney U
+  Medians: PRNG=1.000000, QRNG=1.000000, U=12376479.000, p=0.074943
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: p4 | Test: Mann-Whitney U
+  Medians: PRNG=0.000000, QRNG=0.000000, U=12583743.000, p=0.219844
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: straight_corridors | Test: Mann-Whitney U
+  Medians: PRNG=12.000000, QRNG=12.000000, U=12664894.500, p=0.251300
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: turning_corridors | Test: Mann-Whitney U
+  Medians: PRNG=13.000000, QRNG=13.000000, U=12326344.500, p=0.223979
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: turns_total | Test: Mann-Whitney U
+  Medians: PRNG=46.000000, QRNG=46.000000, U=12338379.500, p=0.261919
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+Metric: mean_turns_per_corridor | Test: Mann-Whitney U
+  Medians: PRNG=1.777778, QRNG=1.777778, U=12322673.500, p=0.219232
+  Samples used: PRNG=5000 of 76801, QRNG=5000 of 76800
+  Significant at alpha=0.05: False
+
+PART 3: TRUE MULTIVARIATE PERMANOVA
+----------------------------------------------------------------------------------------
+Method: scikit-bio permanova (Euclidean distance on z-scored metrics)
+Metrics included: shortest_path_len, dead_end_count, tortuosity, p3, p4, straight_corridors, turning_corridors, turns_total, mean_turns_per_corridor
+Rows used (after per-metric complete cases and sampling): PRNG=5000 of 76801, QRNG=5000 of 76800
+Pseudo-F=1.684381, p=0.122877, permutations=1000
+Degrees of freedom: between=1, within=9998
+Significant at alpha=0.05: False
+
+SUMMARY
+----------------------------------------------------------------------------------------
+Univariate significant metrics: 0/9
+Multivariate PERMANOVA significant: False (p=0.122877)
+========================================================================================
