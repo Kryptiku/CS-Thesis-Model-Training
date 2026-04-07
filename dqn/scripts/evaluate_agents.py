@@ -1,12 +1,3 @@
-"""
-
-Evaluates both PRNG and QRNG trained agents on novel mazes with:
-- Success Rate % (SR)
-- Reward (navigation quality)
-- Steps Taken (path efficiency)
-- Generalization Gap (SR_intra - SR_cross)
-"""
-
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
