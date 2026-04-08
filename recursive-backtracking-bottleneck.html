@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursive Backtracking — Bottleneck Visualized</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #08080d;
+    color: #e0e0e8;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 36px 24px;
+  }
+
+  h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .viz-area {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── Maze ── */
+  .maze-wrap {
+    background: #0e0e16;
+    border: 1px solid #1c1c2a;
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 6px;
+    image-rendering: pixelated;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 8px 14px;
+    border: 1px solid #252535;
+    border-radius: 6px;
+    background: #12121c;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  button:hover { background: #1a1a28; color: #fff; }
+  button.go { background: #2563eb; border-color: #2563eb; color: #fff; }
+  button.go:hover { background: #3b82f6; }
+  button.go.paused { background: #dc2626; border-color: #dc2626; }
+
+  /* ── Right panel ── */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: #0e0e16;
+    border: 1px solid #1c1c2a;
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+
+  .card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Step counter bar ── */
+  .step-bar {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    min-height: 18px;
+  }
+
+  .step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    animation: pop 0.15s ease-out;
+  }
+
+  .step-dot.forward { background: #2563eb; }
+  .step-dot.backtrack { background: #ef4444; }
+
+  @keyframes pop {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: #555;
+  }
+
+  .bar-label .blue { color: #60a5fa; }
+  .bar-label .red { color: #f87171; }
+
+  /* ── Big numbers ── */
+  .big-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .big-stat {
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 8px;
+  }
+
+  .big-stat .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .big-stat .label {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .bg-blue { background: #2563eb12; }
+  .bg-red { background: #ef444412; }
+  .bg-yellow { background: #f59e0b12; }
+  .bg-gray { background: #ffffff08; }
+
+  .num.blue { color: #60a5fa; }
+  .num.red { color: #f87171; }
+  .num.yellow { color: #fbbf24; }
+  .num.white { color: #fff; }
+
+  /* ── The point ── */
+  .point-card {
+    background: linear-gradient(135deg, #160a0a, #0e0e16);
+    border-color: #2a1515;
+  }
+
+  .point {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+
+  .point:last-child { margin-bottom: 0; }
+
+  .point-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .point-num.r { background: #ef444430; color: #f87171; }
+  .point-num.b { background: #2563eb30; color: #60a5fa; }
+  .point-num.y { background: #f59e0b30; color: #fbbf24; }
+
+  .point-text {
+    font-size: 0.8rem;
+    color: #999;
+    line-height: 1.4;
+  }
+
+  .point-text strong { color: #ddd; }
+
+  /* ── Trail legend ── */
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    color: #888;
+  }
+
+  .legend-row:last-child { margin-bottom: 0; }
+
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ── Status message ── */
+  .status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #555;
+    margin-top: 10px;
+    min-height: 18px;
+    line-height: 1.4;
+  }
+
+  .status .highlight { color: #f87171; font-weight: 600; }
+  .status .fwd { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Why Recursive Backtracking Bottlenecks</h1>
+  <p class="subtitle">Each blue dot = one productive step carving a new cell. Each red dot = one wasted step retracing a dead end. Watch the red pile up.</p>
+
+  <div class="viz-area">
+    <div>
+      <div class="maze-wrap">
+        <canvas id="c" width="320" height="320"></canvas>
+        <div class="controls">
+          <button class="go" id="btnGo">&#9654; Play</button>
+          <button id="btnStep">Step</button>
+          <button id="btnReset">Reset</button>
+        </div>
+        <div class="status" id="status">Press Play or Step to begin.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <!-- Step trail -->
+      <div class="card">
+        <h3>Every Step Taken</h3>
+        <div class="step-bar" id="stepBar"></div>
+        <div class="bar-label">
+          <span><span class="blue">&#9632;</span> Forward (new cell)</span>
+          <span><span class="red">&#9632;</span> Backtrack (wasted)</span>
+        </div>
+      </div>
+
+      <!-- Big numbers -->
+      <div class="card">
+        <h3>Live Count</h3>
+        <div class="big-stats">
+          <div class="big-stat bg-blue">
+            <div class="num blue" id="nFwd">0</div>
+            <div class="label">Forward</div>
+          </div>
+          <div class="big-stat bg-red">
+            <div class="num red" id="nBack">0</div>
+            <div class="label">Backtrack</div>
+          </div>
+          <div class="big-stat bg-gray">
+            <div class="num white" id="nTotal">0</div>
+            <div class="label">Total Steps</div>
+          </div>
+          <div class="big-stat bg-yellow">
+            <div class="num yellow" id="nWaste">0%</div>
+            <div class="label">Wasted</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="card">
+        <h3>What You're Seeing</h3>
+        <div class="legend-row"><div class="legend-swatch" style="background:#2563eb;box-shadow:0 0 8px #2563eb88;"></div> Current cell (cursor)</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#1e3a5f;"></div> Visited &amp; on stack (path so far)</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#ef4444;box-shadow:0 0 6px #ef444466;"></div> Backtracking (retreating)</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#14532d;"></div> Done (popped off stack)</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#111;border:1px solid #222;"></div> Unvisited</div>
+      </div>
+
+      <!-- The point -->
+      <div class="card point-card">
+        <h3>The Bottleneck</h3>
+        <div class="point">
+          <div class="point-num b">1</div>
+          <div class="point-text"><strong>One cell at a time.</strong> It can only carve one cell per step — zero parallelism.</div>
+        </div>
+        <div class="point">
+          <div class="point-num r">2</div>
+          <div class="point-text"><strong>Dead ends = wasted work.</strong> Every red dot is a step that produced nothing. It just retraces its own path.</div>
+        </div>
+        <div class="point">
+          <div class="point-num y">3</div>
+          <div class="point-text"><strong>Scales poorly.</strong> An n×n grid has n² cells but needs many more than n² total steps because of backtracking.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ──
+const N = 8; // 8×8 grid — small enough to clearly see what's happening
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const dpr = window.devicePixelRatio || 1;
+const displaySize = 320;
+canvas.width = displaySize * dpr;
+canvas.height = displaySize * dpr;
+ctx.scale(dpr, dpr);
+canvas.style.width = displaySize + 'px';
+canvas.style.height = displaySize + 'px';
+
+const pad = 8;
+const cellSize = (displaySize - pad * 2) / N;
+
+// ── Maze State ──
+let grid, stack, current, done;
+let fwdCount, backCount, rngCount, isBacktracking;
+let stepHistory = []; // 'f' or 'b'
+let running = false, animId = null, lastT = 0;
+
+const DIRS = [
+  { dx: 0, dy:-1, w:'top',    o:'bottom' },
+  { dx: 1, dy: 0, w:'right',  o:'left'   },
+  { dx: 0, dy: 1, w:'bottom', o:'top'    },
+  { dx:-1, dy: 0, w:'left',   o:'right'  },
+];
+
+function Cell(x,y){ return { x, y, vis:false, walls:{top:true,right:true,bottom:true,left:true}, onStack:false, completed:false }; }
+
+function idx(x,y){ return (x<0||x>=N||y<0||y>=N) ? -1 : y*N+x; }
+
+function init(){
+  grid = [];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) grid.push(Cell(x,y));
+  stack = [];
+  current = grid[0];
+  current.vis = true;
+  current.onStack = true;
+  stack.push(current);
+  fwdCount = 0; backCount = 0; rngCount = 0;
+  isBacktracking = false;
+  done = false;
+  stepHistory = [];
+  updateUI();
+  draw();
+}
+
+function neighbors(c){
+  const nb = [];
+  for(const d of DIRS){
+    const i = idx(c.x+d.dx, c.y+d.dy);
+    if(i>=0 && !grid[i].vis) nb.push({cell:grid[i], dir:d});
+  }
+  return nb;
+}
+
+function step(){
+  if(done) return;
+  const nb = neighbors(current);
+
+  if(nb.length > 0){
+    rngCount++;
+    const pick = nb[Math.floor(Math.random()*nb.length)];
+    current.walls[pick.dir.w] = false;
+    pick.cell.walls[pick.dir.o] = false;
+    pick.cell.vis = true;
+    pick.cell.onStack = true;
+    stack.push(pick.cell);
+    current = pick.cell;
+    fwdCount++;
+    isBacktracking = false;
+    stepHistory.push('f');
+  } else {
+    current.onStack = false;
+    current.completed = true;
+    stack.pop();
+    backCount++;
+    isBacktracking = true;
+    stepHistory.push('b');
+
+    if(stack.length > 0){
+      current = stack[stack.length-1];
+    } else {
+      current = null;
+      done = true;
+      grid.forEach(c => c.completed = true);
+    }
+  }
+  updateUI();
+}
+
+// ── UI Updates ──
+function updateUI(){
+  const total = fwdCount + backCount;
+  document.getElementById('nFwd').textContent = fwdCount;
+  document.getElementById('nBack').textContent = backCount;
+  document.getElementById('nTotal').textContent = total;
+  document.getElementById('nWaste').textContent = total > 0 ? Math.round(backCount/total*100)+'%' : '0%';
+
+  // Step bar
+  const bar = document.getElementById('stepBar');
+  // Only add the newest dot (avoid re-rendering everything)
+  if(stepHistory.length > bar.children.length){
+    const dot = document.createElement('div');
+    dot.className = 'step-dot ' + (stepHistory[stepHistory.length-1]==='f' ? 'forward' : 'backtrack');
+    bar.appendChild(dot);
+  }
+
+  // Status message
+  const st = document.getElementById('status');
+  if(done){
+    const pct = Math.round(backCount/total*100);
+    st.innerHTML = `Done! <span class="highlight">${pct}% of all steps were wasted</span> on backtracking.`;
+  } else if(isBacktracking){
+    st.innerHTML = `<span class="highlight">Dead end!</span> Backtracking — no new cells carved.`;
+  } else {
+    st.innerHTML = `<span class="fwd">Carving forward</span> — exploring a new cell.`;
+  }
+}
+
+// ── Drawing ──
+function draw(){
+  ctx.clearRect(0, 0, displaySize, displaySize);
+  ctx.fillStyle = '#08080d';
+  ctx.fillRect(0, 0, displaySize, displaySize);
+
+  for(const cell of grid){
+    const x = pad + cell.x * cellSize;
+    const y = pad + cell.y * cellSize;
+    const inset = 1;
+
+    // Cell fill
+    if(cell === current){
+      ctx.fillStyle = isBacktracking ? '#ef4444' : '#2563eb';
+    } else if(cell.completed){
+      ctx.fillStyle = '#0c1f12';
+    } else if(cell.onStack){
+      ctx.fillStyle = '#0f2340';
+    } else if(cell.vis){
+      ctx.fillStyle = '#151520';
+    } else {
+      ctx.fillStyle = '#0a0a10';
+    }
+    ctx.fillRect(x+inset, y+inset, cellSize-inset*2, cellSize-inset*2);
+
+    // Glow for current
+    if(cell === current){
+      const color = isBacktracking ? '#ef4444' : '#2563eb';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = color;
+      ctx.fillRect(x+3, y+3, cellSize-6, cellSize-6);
+      ctx.shadowBlur = 0;
+    }
+
+    // On-stack subtle border highlight
+    if(cell.onStack && cell !== current){
+      ctx.strokeStyle = '#2563eb30';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x+2, y+2, cellSize-4, cellSize-4);
+    }
+
+    // Walls
+    ctx.strokeStyle = '#2a2a3d';
+    ctx.lineWidth = 2;
+
+    if(cell.walls.top){
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+cellSize, y); ctx.stroke();
+    }
+    if(cell.walls.right){
+      ctx.beginPath(); ctx.moveTo(x+cellSize, y); ctx.lineTo(x+cellSize, y+cellSize); ctx.stroke();
+    }
+    if(cell.walls.bottom){
+      ctx.beginPath(); ctx.moveTo(x, y+cellSize); ctx.lineTo(x+cellSize, y+cellSize); ctx.stroke();
+    }
+    if(cell.walls.left){
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+cellSize); ctx.stroke();
+    }
+  }
+
+  // Draw path trail line through the stack to show the "thread"
+  if(stack.length > 1){
+    ctx.beginPath();
+    ctx.strokeStyle = '#2563eb40';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    for(let i=0; i<stack.length; i++){
+      const sx = pad + stack[i].x * cellSize + cellSize/2;
+      const sy = pad + stack[i].y * cellSize + cellSize/2;
+      if(i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+  }
+}
+
+// ── Animation ──
+function loop(t){
+  if(!running) return;
+  if(done){ running=false; updateBtn(); draw(); return; }
+
+  const delay = 180; // fixed readable speed
+  if(t - lastT >= delay){
+    step();
+    draw();
+    lastT = t;
+  }
+  animId = requestAnimationFrame(loop);
+}
+
+// ── Controls ──
+const btnGo = document.getElementById('btnGo');
+const btnStep = document.getElementById('btnStep');
+const btnReset = document.getElementById('btnReset');
+
+function updateBtn(){
+  btnGo.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
+  btnGo.classList.toggle('paused', running);
+}
+
+btnGo.onclick = () => {
+  if(done) return;
+  running = !running;
+  updateBtn();
+  if(running){ lastT=0; animId=requestAnimationFrame(loop); }
+};
+
+btnStep.onclick = () => {
+  if(done) return;
+  running=false; updateBtn();
+  step(); draw();
+};
+
+btnReset.onclick = () => {
+  running=false; updateBtn();
+  if(animId) cancelAnimationFrame(animId);
+  document.getElementById('stepBar').innerHTML = '';
+  init();
+};
+
+// Boot
+init();
+</script>
+</body>
+</html>

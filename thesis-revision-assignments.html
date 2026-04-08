@@ -1,0 +1,183 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="UTF-8">
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 1in; }
+h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 6pt; }
+h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; margin-bottom: 6pt; border-bottom: 2px solid #333; padding-bottom: 4pt; }
+h3 { font-size: 12pt; font-weight: bold; margin-top: 12pt; margin-bottom: 4pt; }
+table { border-collapse: collapse; width: 100%; margin-top: 6pt; margin-bottom: 12pt; }
+th { background-color: #2c3e50; color: white; font-weight: bold; padding: 8pt; text-align: left; border: 1px solid #2c3e50; font-size: 11pt; }
+td { padding: 6pt 8pt; border: 1px solid #ccc; vertical-align: top; font-size: 11pt; }
+tr:nth-child(even) td { background-color: #f9f9f9; }
+.section-name { font-weight: bold; }
+.note { font-style: italic; color: #555; margin-top: 6pt; font-size: 11pt; }
+.rationale { margin-top: 12pt; padding: 10pt; background-color: #f0f4f8; border-left: 4px solid #2c3e50; }
+.header-info { text-align: center; margin-bottom: 18pt; }
+.header-info p { margin: 2pt 0; }
+</style>
+</head>
+<body>
+
+<div class="header-info">
+<h1>Thesis Revision Assignments</h1>
+<p><b>Project:</b> Evaluating QRNG vs PRNG in Procedural Maze Generation for DRL</p>
+<p><b>Date:</b> April 4, 2026</p>
+</div>
+
+<h2>Member 1 &mdash; Front Matter &amp; Foundations</h2>
+
+<table>
+<tr>
+  <th style="width:25%;">Section</th>
+  <th>Revision Task</th>
+</tr>
+<tr>
+  <td class="section-name">Abstract</td>
+  <td>Simplify sentences; reduce technical overload; keep key results clear and direct.</td>
+</tr>
+<tr>
+  <td class="section-name">Background</td>
+  <td>Add a clear research gap statement at the end of the section:<br><br>
+  <em>&ldquo;This study addresses the lack of empirical evaluation of QRNG-based randomness in procedural maze generation and its impact on reinforcement learning generalization.&rdquo;</em></td>
+</tr>
+<tr>
+  <td class="section-name">Statement of the Problem</td>
+  <td>Make questions concise. Ensure each question is: clear, measurable, and aligned to results.</td>
+</tr>
+<tr>
+  <td class="section-name">Objectives</td>
+  <td>Rewrite into the following four measurable objectives:<br>
+  <ol>
+    <li>Compare QRNG- and PRNG-based maze generation in terms of entropy, randomness, and structural diversity.</li>
+    <li>Evaluate DRL agent performance under QRNG- and PRNG-generated environments using success rate and generalization metrics.</li>
+    <li>Analyze the impact of randomness type on learning stability and policy robustness.</li>
+    <li>Validate observed differences using statistical testing.</li>
+  </ol>
+  </td>
+</tr>
+<tr>
+  <td class="section-name">Novelty</td>
+  <td>Add a novel contribution framing sentence:<br><br>
+  <em>&ldquo;This study introduces a novel experimental evaluation of quantum-derived randomness in procedural environment generation and its effect on reinforcement learning generalization.&rdquo;</em></td>
+</tr>
+<tr>
+  <td class="section-name">Significance</td>
+  <td>Refocus significance on: procedural generation, DRL training environments, and randomness quality. Remove overly broad claims about AI, society, and research in general.</td>
+</tr>
+</table>
+
+<h2>Member 2 &mdash; Literature &amp; Methodology</h2>
+
+<table>
+<tr>
+  <th style="width:25%;">Section</th>
+  <th>Revision Task</th>
+</tr>
+<tr>
+  <td class="section-name">Scope and Limitations</td>
+  <td>Add the following limitations:<br>
+  <ul>
+    <li>&ldquo;Results are limited to simulated environments.&rdquo;</li>
+    <li>&ldquo;Not validated in real-world robotics or game systems.&rdquo;</li>
+  </ul>
+  </td>
+</tr>
+<tr>
+  <td class="section-name">Definition of Terms</td>
+  <td>Rewrite ALL terms: one sentence only, operational, focused on study usage.<br><br>
+  Example: <em>&ldquo;Entropy. A metric used to quantify randomness in generated maze structures.&rdquo;</em></td>
+</tr>
+<tr>
+  <td class="section-name">Literature Review</td>
+  <td>Reduce redundancy and improve synthesis clarity across all subsections.</td>
+</tr>
+<tr>
+  <td class="section-name">Research Gap</td>
+  <td>Condense into ONE sharp statement:<br><br>
+  <em>&ldquo;This study addresses the absence of empirical analysis of QRNG-based randomness in procedural maze generation and its effect on DRL generalization.&rdquo;</em></td>
+</tr>
+<tr>
+  <td class="section-name">Conceptual Framework</td>
+  <td>Redesign the figure: use diagram elements (boxes, arrows); reduce text inside the figure.</td>
+</tr>
+<tr>
+  <td class="section-name">Methodology</td>
+  <td>Add pseudocode or a full algorithm for the QRNG vs PRNG Training Pipeline:<br>
+  <ol>
+    <li>Generate maze seeds (QRNG / PRNG)</li>
+    <li>Construct procedural environments</li>
+    <li>Train DRL agent</li>
+    <li>Evaluate performance</li>
+    <li>Compute entropy and diversity</li>
+    <li>Perform statistical comparison</li>
+  </ol>
+  </td>
+</tr>
+<tr>
+  <td class="section-name">Experimental Design</td>
+  <td>Add justification per design choice: why QRNG was selected, why specific metrics were chosen.</td>
+</tr>
+</table>
+
+<h2>Member 3 &mdash; Results, Analysis &amp; Polish</h2>
+
+<table>
+<tr>
+  <th style="width:25%;">Section</th>
+  <th>Revision Task</th>
+</tr>
+<tr>
+  <td class="section-name">Results</td>
+  <td>Add interpretation per table. Link each result to its corresponding objective.</td>
+</tr>
+<tr>
+  <td class="section-name">Analysis (Chapter 4)</td>
+  <td>Add deeper explanation: explain WHY QRNG affects performance; discuss effect on exploration vs. exploitation.</td>
+</tr>
+<tr>
+  <td class="section-name">Conclusions (Chapter 5)</td>
+  <td>Ensure 1 objective = 1 conclusion. No extra conclusions. Direct alignment with objectives.</td>
+</tr>
+<tr>
+  <td class="section-name">Formatting (Whole Document)</td>
+  <td>
+  <ul>
+    <li>Apply APA formatting throughout.</li>
+    <li>Fix spacing inconsistencies.</li>
+    <li>Fix possible numbering issues.</li>
+    <li>Break long paragraphs.</li>
+    <li>Clean overall layout.</li>
+  </ul>
+  </td>
+</tr>
+<tr>
+  <td class="section-name">Language &amp; Grammar (Whole Document)</td>
+  <td>
+  <ul>
+    <li>Simplify long sentences.</li>
+    <li>Remove redundancy.</li>
+    <li>Improve academic tone.</li>
+  </ul>
+  </td>
+</tr>
+</table>
+
+<div class="rationale">
+<h3>Distribution Rationale</h3>
+<p><b>Member 1</b> gets more sections but they are mostly small additions and rewrites (front matter).</p>
+<p><b>Member 2</b> gets the heaviest content sections: literature review, methodology, and framework redesign.</p>
+<p><b>Member 3</b> gets fewer sections but the formatting and grammar pass covers the entire document.</p>
+</div>
+
+</body>
+</html>

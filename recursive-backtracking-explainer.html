@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursive Backtracking — The Bottleneck Effect</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0c0e13;
+    --surface: #14171e;
+    --surface2: #1a1e27;
+    --border: #2a2f3a;
+    --text: #e2e4e9;
+    --text-dim: #8b90a0;
+    --accent: #6ee7b7;
+    --accent-dim: #2d6b54;
+    --qrng: #818cf8;
+    --prng: #fb923c;
+    --red: #f87171;
+    --yellow: #fbbf24;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 15px;
+    margin-bottom: 40px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ── MAZE PANEL ── */
+  .maze-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .maze-panel h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .maze-canvas-wrap {
+    position: relative;
+    width: 290px;
+    height: 290px;
+    margin: 0 auto;
+  }
+
+  canvas#mazeCanvas {
+    width: 290px;
+    height: 290px;
+    border-radius: 8px;
+    background: var(--bg);
+  }
+
+  .maze-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .maze-controls button {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .maze-controls button:hover { background: var(--border); }
+  .maze-controls button.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .maze-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .stat-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .stat-box .label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-box .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── BOTTLENECK CARD ── */
+  .bottleneck-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .bottleneck-card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .bottleneck-card h2 span { color: var(--red); }
+
+  /* The funnel visualization */
+  .funnel {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 0 auto 24px;
+    justify-content: center;
+  }
+
+  .funnel-stage { text-align: center; }
+
+  .funnel-box {
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .funnel-box.big {
+    width: 200px;
+    height: 100px;
+    background: linear-gradient(135deg, #312e81, #4338ca);
+    border: 2px solid var(--qrng);
+  }
+  .funnel-box.big .num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #c7d2fe;
+  }
+  .funnel-box.big .desc {
+    font-size: 11px;
+    color: #a5b4fc;
+    margin-top: 2px;
+  }
+
+  .funnel-arrow {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .funnel-arrow .line {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+  .funnel-arrow .line::after {
+    content: '▶';
+    position: absolute;
+    right: -4px;
+    top: -9px;
+    color: var(--border);
+    font-size: 14px;
+  }
+  .funnel-arrow .arrow-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    white-space: nowrap;
+  }
+
+  .funnel-box.small {
+    width: 120px;
+    height: 70px;
+    background: linear-gradient(135deg, #7f1d1d, #991b1b);
+    border: 2px solid var(--red);
+  }
+  .funnel-box.small .num {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fca5a5;
+  }
+  .funnel-box.small .desc {
+    font-size: 11px;
+    color: #fca5a5;
+    margin-top: 2px;
+  }
+
+  .funnel-stage-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* Live step display */
+  .step-display {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 4px;
+  }
+
+  .step-display h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--yellow);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .step-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  .step-label {
+    color: var(--text-dim);
+    min-width: 140px;
+    font-size: 12px;
+  }
+  .step-value { font-weight: 600; }
+  .step-value.big-number { color: var(--qrng); font-size: 12px; }
+  .step-value.neighbors { color: var(--yellow); }
+  .step-value.choice { color: var(--accent); font-size: 16px; }
+  .step-value.wasted { color: var(--red); }
+
+  .waste-bar-wrap { margin-top: 16px; }
+  .waste-bar-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .waste-bar {
+    height: 28px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+  }
+  .waste-bar .used {
+    background: var(--accent);
+    height: 100%;
+    transition: width 0.3s;
+    min-width: 2px;
+    border-radius: 6px 0 0 6px;
+  }
+  .waste-bar .wasted-part {
+    background: var(--red);
+    opacity: 0.5;
+    height: 100%;
+    flex: 1;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* ── KEY INSIGHT CARDS ── */
+  .insights {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .insight-card .number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .insight-card:nth-child(1) .number { color: var(--qrng); }
+  .insight-card:nth-child(2) .number { color: var(--red); }
+  .insight-card:nth-child(3) .number { color: var(--yellow); }
+  .insight-card .insight-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .insight-card .insight-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* ── BOTTOM COMPARISON ── */
+  .comparison-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 32px;
+  }
+  .comparison-section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    align-items: center;
+  }
+
+  .comp-col {
+    text-align: center;
+    padding: 20px;
+  }
+  .comp-col h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .comp-col.qrng h3 { color: var(--qrng); }
+  .comp-col.prng h3 { color: var(--prng); }
+
+  .comp-col .precision {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .comp-col .arrow-down {
+    font-size: 24px;
+    color: var(--border);
+    margin: 8px 0;
+  }
+
+  .comp-col .result {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .comp-col .result-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .comp-equals {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--red);
+    text-align: center;
+  }
+
+  .bottom-line {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .bottom-line strong {
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .insights { grid-template-columns: 1fr; }
+    .funnel { flex-direction: column; gap: 8px; }
+    .funnel-arrow { transform: rotate(90deg); width: 40px; height: 40px; }
+    .comparison-grid { grid-template-columns: 1fr; gap: 12px; }
+    .comp-equals { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>The <span>Bottleneck</span> Effect</h1>
+  <p class="subtitle">Why recursive backtracking wastes randomness — no matter the source</p>
+
+  <div class="main-grid">
+    <!-- LEFT: MAZE -->
+    <div class="maze-panel">
+      <h2>10×10 Maze Generation</h2>
+      <div class="maze-canvas-wrap">
+        <canvas id="mazeCanvas" width="580" height="580"></canvas>
+      </div>
+      <div class="maze-controls">
+        <button id="btnStep">Step</button>
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnFast">Fast</button>
+        <button id="btnReset">Reset</button>
+      </div>
+      <div class="maze-stats">
+        <div class="stat-box">
+          <div class="label">Steps</div>
+          <div class="value" id="statSteps">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Avg Choices</div>
+          <div class="value" id="statAvg">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Max Possible</div>
+          <div class="value">4</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Info Used</div>
+          <div class="value" id="statInfo">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: BOTTLENECK VIZ -->
+    <div class="right-panel">
+      <div class="bottleneck-card">
+        <h2>How Randomness Gets <span>Wasted</span></h2>
+
+        <!-- Funnel -->
+        <div class="funnel">
+          <div class="funnel-stage">
+            <div class="funnel-box big">
+              <div class="num" style="font-size:15px;">4,503,599,627,370,496</div>
+              <div class="desc">possible values (2⁵² bits)</div>
+            </div>
+            <div class="funnel-stage-label">Random number input</div>
+          </div>
+          <div class="funnel-arrow">
+            <div class="line"></div>
+            <div class="arrow-label">algorithm asks</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-box small">
+              <div class="num" id="funnelChoices">2–3</div>
+              <div class="desc">choices left</div>
+            </div>
+            <div class="funnel-stage-label">Actual decision</div>
+          </div>
+        </div>
+
+        <!-- WHY label -->
+        <div style="background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.25); border-radius:10px; padding:14px 18px; margin-bottom:16px;">
+          <div style="font-size:13px; font-weight:700; color:var(--red); margin-bottom:8px;">WHY does recursive backtracking create this bottleneck?</div>
+          <div style="font-size:12px; color:var(--text-dim); line-height:1.6;">
+            <strong style="color:var(--yellow);">① Too few choices</strong> — at each cell, only 2–3 of 4 neighbors are unvisited<br>
+            <strong style="color:var(--yellow);">② Too strict rules</strong> — perfect maze = no loops, no revisits, one path only<br>
+            <strong style="color:var(--yellow);">③ Tiny local decisions</strong> — randomness is only used to pick 1 direction, then discarded
+          </div>
+        </div>
+
+        <!-- Live step info -->
+        <div class="step-display">
+          <h3 id="stepTitle">▶ Press Play to start</h3>
+          <div class="step-row">
+            <span class="step-label">Random number:</span>
+            <span class="step-value big-number" id="sdRandom">—</span>
+          </div>
+          <div class="step-row">
+            <span class="step-label">Available neighbors:</span>
+            <span class="step-value neighbors" id="sdNeighbors">—</span>
+          </div>
+          <div class="step-row">
+            <span class="step-label">Algorithm picks:</span>
+            <span class="step-value choice" id="sdChoice">—</span>
+          </div>
+          <div class="step-row">
+            <span class="step-label">Precision wasted:</span>
+            <span class="step-value wasted" id="sdWaste">—</span>
+          </div>
+
+          <div class="waste-bar-wrap">
+            <div class="waste-bar-label">
+              <span style="color:var(--accent)">Used</span>
+              <span id="wastePercent">—</span>
+              <span style="color:var(--red)">Wasted</span>
+            </div>
+            <div class="waste-bar">
+              <div class="used" id="wasteUsed" style="width: 0%"></div>
+              <div class="wasted-part"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Insights -->
+      <div class="insights">
+        <div class="insight-card">
+          <div class="number">52 bits</div>
+          <div class="insight-title">Input precision</div>
+          <div class="insight-desc">Each random number has <strong style="color:var(--qrng)">4,503,599,627,370,496</strong> possible values — from QRNG or PRNG.</div>
+        </div>
+        <div class="insight-card">
+          <div class="number">~1.5 bits</div>
+          <div class="insight-title">Actually used</div>
+          <div class="insight-desc">The algorithm only needs "pick 1 of <strong style="color:var(--red)">2 or 3</strong>" — that's 1 to 1.58 bits out of 52.</div>
+        </div>
+        <div class="insight-card">
+          <div class="number">97%+</div>
+          <div class="insight-title">Thrown away</div>
+          <div class="insight-desc">Like using a <strong style="color:var(--yellow)">firehose to fill a teaspoon</strong> — the extra water doesn't make the teaspoon bigger.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: Side-by-side comparison -->
+  <div class="comparison-section">
+    <h2>Same Algorithm, Same Bottleneck</h2>
+    <div class="comparison-grid">
+      <div class="comp-col qrng">
+        <h3>QRNG Input</h3>
+        <div class="precision">0.7283948571629384...</div>
+        <div style="font-size:11px; color:var(--qrng); margin-bottom:4px;">truly random, 52 bits of entropy</div>
+        <div class="arrow-down">↓</div>
+        <div style="font-size:12px; color: var(--text-dim); margin-bottom:8px;">
+          "Pick 1 of 3: North, East, South"
+        </div>
+        <div class="result">→ East</div>
+        <div class="result-label">Only the direction matters</div>
+      </div>
+      <div class="comp-equals">
+        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">same tiny</div>
+        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">pool of</div>
+        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">choices</div>
+        <div style="font-size:30px;">=</div>
+      </div>
+      <div class="comp-col prng">
+        <h3>PRNG Input</h3>
+        <div class="precision">0.4192837465018273...</div>
+        <div style="font-size:11px; color:var(--prng); margin-bottom:4px;">pseudo-random, deterministic</div>
+        <div class="arrow-down">↓</div>
+        <div style="font-size:12px; color: var(--text-dim); margin-bottom:8px;">
+          "Pick 1 of 3: North, East, South"
+        </div>
+        <div class="result">→ North</div>
+        <div class="result-label">Only the direction matters</div>
+      </div>
+    </div>
+    <div class="bottom-line">
+      Different random sources, different numbers, but the <strong>same 3-option decision space</strong>.<br>
+      The algorithm constrains the choice so much that randomness quality cannot affect the output distribution.<br>
+      <strong>The algorithm is the bottleneck, not the randomness.</strong>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// MAZE GENERATION — Recursive Backtracking 10x10
+// ═══════════════════════════════════════════
+
+const GRID = 10;
+const canvas = document.getElementById('mazeCanvas');
+const ctx = canvas.getContext('2d');
+const CELL = canvas.width / GRID;
+
+// State
+let cells, walls, stack, currentCell;
+let stepCount, totalChoices, totalDecisions, finished;
+let animTimer = null;
+
+const DIRS = [
+  { name: 'North', dr: -1, dc: 0 },
+  { name: 'South', dr: 1, dc: 0 },
+  { name: 'East', dr: 0, dc: 1 },
+  { name: 'West', dr: 0, dc: -1 }
+];
+
+function wallKey(r1, c1, r2, c2) {
+  if (r1 === r2) return `h:${Math.min(c1,c2)},${r1}`;
+  return `v:${Math.min(r1,r2)},${c1}`;
+}
+
+function initMaze() {
+  // Reset all state
+  cells = Array.from({length: GRID}, () => Array(GRID).fill(false));
+  walls = {};
+  stack = [];
+  stepCount = 0;
+  totalChoices = 0;
+  totalDecisions = 0;
+  finished = false;
+
+  // Create all walls
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (c < GRID - 1) walls[`h:${c},${r}`] = true;   // wall to the right
+      if (r < GRID - 1) walls[`v:${r},${c}`] = true;    // wall below
+    }
+  }
+
+  // Start at top-left
+  cells[0][0] = true;
+  currentCell = {r: 0, c: 0};
+  stack = [{r: 0, c: 0}];
+
+  // Reset UI
+  document.getElementById('statSteps').textContent = '0';
+  document.getElementById('statAvg').textContent = '—';
+  document.getElementById('statInfo').textContent = '—';
+  document.getElementById('stepTitle').textContent = '▶ Press Play to start';
+  document.getElementById('sdRandom').textContent = '—';
+  document.getElementById('sdNeighbors').textContent = '—';
+  document.getElementById('sdChoice').textContent = '—';
+  document.getElementById('sdWaste').textContent = '—';
+  document.getElementById('wastePercent').textContent = '—';
+  document.getElementById('wasteUsed').style.width = '0%';
+  document.getElementById('funnelChoices').textContent = '2–3';
+
+  drawMaze();
+}
+
+function getUnvisitedNeighbors(r, c) {
+  const result = [];
+  for (const d of DIRS) {
+    const nr = r + d.dr, nc = c + d.dc;
+    if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && !cells[nr][nc]) {
+      result.push({r: nr, c: nc, dir: d.name});
+    }
+  }
+  return result;
+}
+
+function doStep() {
+  if (finished) return false;
+
+  const {r, c} = currentCell;
+  const neighbors = getUnvisitedNeighbors(r, c);
+
+  if (neighbors.length > 0) {
+    stepCount++;
+    totalChoices += neighbors.length;
+    totalDecisions++;
+
+    // Generate random number (simulating QRNG/PRNG)
+    const randomValue = Math.random();
+    const idx = Math.floor(randomValue * neighbors.length);
+    const chosen = neighbors[idx];
+
+    // Remove wall between current and chosen
+    const wk = wallKey(r, c, chosen.r, chosen.c);
+    delete walls[wk];
+
+    // Mark visited, push stack, move
+    cells[chosen.r][chosen.c] = true;
+    stack.push({r: chosen.r, c: chosen.c});
+    currentCell = {r: chosen.r, c: chosen.c};
+
+    // Update UI
+    updateStepDisplay(randomValue, neighbors, chosen);
+    updateStats();
+  } else {
+    // Backtrack
+    stack.pop();
+    if (stack.length === 0) {
+      finished = true;
+      document.getElementById('stepTitle').textContent = '✓ Maze Complete!';
+      stopAnim();
+      drawMaze();
+      return false;
+    }
+    currentCell = stack[stack.length - 1];
+    document.getElementById('stepTitle').textContent = '⟵ Backtracking...';
+  }
+
+  drawMaze();
+  return true;
+}
+
+function updateStats() {
+  document.getElementById('statSteps').textContent = stepCount;
+  if (totalDecisions > 0) {
+    const avg = (totalChoices / totalDecisions).toFixed(1);
+    document.getElementById('statAvg').textContent = avg;
+    const bitsUsed = Math.log2(totalChoices / totalDecisions).toFixed(1);
+    document.getElementById('statInfo').textContent = bitsUsed + ' bits';
+  }
+}
+
+function updateStepDisplay(randomValue, neighbors, chosen) {
+  document.getElementById('stepTitle').textContent = `Step ${stepCount}`;
+  document.getElementById('sdRandom').textContent = randomValue.toFixed(16);
+
+  const dirNames = neighbors.map(n => n.dir);
+  document.getElementById('sdNeighbors').textContent =
+    `${neighbors.length} → ${dirNames.join(', ')}`;
+  document.getElementById('sdChoice').textContent = `→ ${chosen.dir}`;
+
+  // Information waste
+  const bitsNeeded = Math.log2(neighbors.length);
+  const bitsTotal = 52;
+  const wastePercent = ((1 - bitsNeeded / bitsTotal) * 100).toFixed(1);
+
+  document.getElementById('sdWaste').textContent = `${wastePercent}%`;
+  document.getElementById('wastePercent').textContent =
+    `${(100 - parseFloat(wastePercent)).toFixed(1)}% used`;
+
+  const usedWidth = Math.max(1.5, (bitsNeeded / bitsTotal) * 100);
+  document.getElementById('wasteUsed').style.width = usedWidth + '%';
+
+  document.getElementById('funnelChoices').textContent = neighbors.length;
+}
+
+// ── DRAWING ──
+function drawMaze() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Fill cells
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const x = c * CELL, y = r * CELL;
+
+      if (!finished && currentCell && currentCell.r === r && currentCell.c === c) {
+        ctx.fillStyle = '#6ee7b7'; // current cell
+      } else if (cells[r][c]) {
+        ctx.fillStyle = '#1a3a2e'; // visited
+      } else {
+        ctx.fillStyle = '#0c0e13'; // unvisited
+      }
+      ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+    }
+  }
+
+  // Draw stack path
+  if (!finished && stack.length > 1) {
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.3)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(stack[0].c * CELL + CELL/2, stack[0].r * CELL + CELL/2);
+    for (let i = 1; i < stack.length; i++) {
+      ctx.lineTo(stack[i].c * CELL + CELL/2, stack[i].r * CELL + CELL/2);
+    }
+    ctx.stroke();
+  }
+
+  // Draw walls
+  ctx.strokeStyle = '#4a5068';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0, 0, canvas.width, canvas.height); // outer border
+
+  ctx.lineWidth = 2.5;
+  for (const key in walls) {
+    if (!walls[key]) continue;
+    const [type, coords] = key.split(':');
+    const [a, b] = coords.split(',').map(Number);
+
+    ctx.beginPath();
+    if (type === 'h') {
+      // Wall between column a and a+1 in row b → vertical line
+      const x = (a + 1) * CELL;
+      ctx.moveTo(x, b * CELL);
+      ctx.lineTo(x, b * CELL + CELL);
+    } else {
+      // Wall between row a and a+1 in column b → horizontal line
+      const y = (a + 1) * CELL;
+      ctx.moveTo(b * CELL, y);
+      ctx.lineTo(b * CELL + CELL, y);
+    }
+    ctx.stroke();
+  }
+}
+
+// ── CONTROLS ──
+function stopAnim() {
+  if (animTimer) { clearInterval(animTimer); animTimer = null; }
+}
+
+function startAnim(speed) {
+  stopAnim();
+  animTimer = setInterval(() => {
+    if (!doStep()) stopAnim();
+  }, speed);
+}
+
+function setActive(id) {
+  document.querySelectorAll('.maze-controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('btnStep').addEventListener('click', () => {
+  stopAnim();
+  setActive('btnStep');
+  if (finished) initMaze();
+  doStep();
+});
+
+document.getElementById('btnPlay').addEventListener('click', () => {
+  setActive('btnPlay');
+  if (finished) initMaze();
+  startAnim(250);
+});
+
+document.getElementById('btnFast').addEventListener('click', () => {
+  setActive('btnFast');
+  if (finished) initMaze();
+  startAnim(40);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  stopAnim();
+  initMaze();
+});
+
+// ── INIT: just draw the empty maze, don't auto-play ──
+initMaze();
+</script>
+
+</body>
+</html>
